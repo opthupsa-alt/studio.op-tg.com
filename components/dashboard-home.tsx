@@ -1,5 +1,6 @@
 "use client"
 
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import Link from "next/link"
@@ -443,7 +444,7 @@ export function DashboardHome({
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{post.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(post.publish_date), "EEEE، d MMMM", { locale: ar })}
+                            {format(parseLocalDate(post.publish_date), "EEEE، d MMMM", { locale: ar })}
                           </p>
                         </div>
                         <Badge variant="outline" className="shrink-0">
@@ -490,7 +491,7 @@ export function DashboardHome({
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{post.title}</p>
                           <p className="text-xs text-red-600">
-                            كان مجدولاً: {format(new Date(post.publish_date), "d MMMM", { locale: ar })}
+                            كان مجدولاً: {format(parseLocalDate(post.publish_date), "d MMMM", { locale: ar })}
                           </p>
                         </div>
                         <Badge variant="destructive" className="shrink-0">

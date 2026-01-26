@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import { Search, Filter, Image, Video, FileText, Layers, Clock } from "lucide-react"
@@ -182,7 +183,7 @@ interface MonthlyGridCardProps {
 }
 
 function MonthlyGridCard({ post, onClick }: MonthlyGridCardProps) {
-  const publishDate = new Date(post.publish_date)
+  const publishDate = parseLocalDate(post.publish_date)
   const dayName = format(publishDate, "EEEE", { locale: ar })
   const formattedDate = format(publishDate, "d MMMM yyyy", { locale: ar })
   const postType = getPostType(post)

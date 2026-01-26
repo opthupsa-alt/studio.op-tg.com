@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useMemo } from "react"
+import { parseLocalDate } from "@/lib/date-utils"
 import {
   startOfMonth,
   endOfMonth,
@@ -51,7 +52,7 @@ export function CalendarView({
 
     return days.map((date): CalendarDay => {
       const dayPosts = posts.filter(
-        (post) => post.publish_date && isSameDay(new Date(post.publish_date), date)
+        (post) => post.publish_date && isSameDay(parseLocalDate(post.publish_date), date)
       )
       return {
         date,

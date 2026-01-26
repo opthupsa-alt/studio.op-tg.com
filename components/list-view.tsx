@@ -1,5 +1,6 @@
 "use client"
 
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import { MoreHorizontal, Eye, Edit, Trash2, Send } from "lucide-react"
@@ -147,7 +148,7 @@ export function ListView({
                   <TableCell className="hidden sm:table-cell">
                     {post.publish_date ? (
                       <span className="text-xs sm:text-sm">
-                        {format(new Date(post.publish_date), "d MMM yyyy", { locale: ar })}
+                        {format(parseLocalDate(post.publish_date), "d MMM yyyy", { locale: ar })}
                       </span>
                     ) : (
                       <span className="text-xs sm:text-sm text-muted-foreground">-</span>

@@ -1,5 +1,6 @@
 "use client"
 
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import { ImageIcon, Video, Film, Camera, Layers, Clock } from "lucide-react"
@@ -42,7 +43,7 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
         const postType = postTypeConfig[post.post_type || "post"]
         const PostTypeIcon = postType.icon
         const status = statusConfig[post.status]
-        const publishDate = new Date(post.publish_date)
+        const publishDate = parseLocalDate(post.publish_date)
         const dayName = format(publishDate, "EEEE", { locale: ar })
         const formattedDate = format(publishDate, "d MMMM yyyy", { locale: ar })
 

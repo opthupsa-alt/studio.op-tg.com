@@ -1,5 +1,6 @@
 "use client"
 
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import { ImageIcon, Video, Images, FileText, Sparkles, Clock, Film, Camera, Layers } from "lucide-react"
@@ -132,7 +133,7 @@ export function PostCard({ post, variant = "full", onClick, onDragStart }: PostC
           {post.publish_date && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="size-3" />
-              {format(new Date(post.publish_date), "d MMM", { locale: ar })}
+              {format(parseLocalDate(post.publish_date), "d MMM", { locale: ar })}
             </div>
           )}
         </div>
@@ -193,7 +194,7 @@ export function PostCard({ post, variant = "full", onClick, onDragStart }: PostC
         {post.publish_date && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Clock className="size-4" />
-            {format(new Date(post.publish_date), "d MMMM yyyy", { locale: ar })}
+            {format(parseLocalDate(post.publish_date), "d MMMM yyyy", { locale: ar })}
           </div>
         )}
       </div>

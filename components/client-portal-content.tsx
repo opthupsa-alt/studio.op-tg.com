@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
 import {
@@ -65,7 +66,7 @@ export function ClientPortalContent({
 
   // Filter posts for current month
   const currentMonthPosts = posts.filter((post) => {
-    const postDate = new Date(post.publish_date)
+    const postDate = parseLocalDate(post.publish_date)
     return postDate.getFullYear() === currentYear && postDate.getMonth() + 1 === currentMonth
   })
 
@@ -163,7 +164,7 @@ export function ClientPortalContent({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="size-4" />
-              {format(new Date(post.publish_date), "d MMMM", { locale: ar })}
+              {format(parseLocalDate(post.publish_date), "d MMMM", { locale: ar })}
             </div>
             <div className="flex items-center gap-1">
               {post.platforms?.slice(0, 3).map((platform) => (
@@ -300,7 +301,7 @@ export function ClientPortalContent({
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="size-4 text-muted-foreground" />
-                      <span>تاريخ النشر: {format(new Date(selectedPost.publish_date), "EEEE, d MMMM yyyy", { locale: ar })}</span>
+                      <span>تاريخ النشر: {format(parseLocalDate(selectedPost.publish_date), "EEEE, d MMMM yyyy", { locale: ar })}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">المنصات:</span>
