@@ -86,49 +86,83 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Check if email already exists
+    // Check if email already exists in Auth
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const emailExists = existingUsers?.users?.some(u => u.email === email)
+    const existingAuthUser = existingUsers?.users?.find(u => u.email === email)
     
-    if (emailExists) {
-      return NextResponse.json(
-        { error: "البريد الإلكتروني مستخدم بالفعل" },
-        { status: 400 }
-      )
-    }
-
-    // Create user with admin API - email is automatically confirmed
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name,
-        role: "client",
-      },
-    })
-
-    if (authError) {
-      console.error("Error creating auth user:", authError)
+    let authUserId: string
+    
+    if (existingAuthUser) {
+      // User exists in Auth - check if they exist in team_members
+      const { data: existingMember } = await supabaseAdmin
+        .from("team_members")
+        .select("id, client_id")
+        .eq("user_id", existingAuthUser.id)
+        .single()
       
-      // Provide user-friendly error messages
-      if (authError.message.includes("already registered")) {
-        return NextResponse.json({ error: "البريد الإلكتروني مسجل بالفعل" }, { status: 400 })
-      }
-      if (authError.message.includes("password")) {
-        return NextResponse.json({ error: "كلمة المرور ضعيفة جداً" }, { status: 400 })
+      if (existingMember) {
+        // User exists in both Auth and team_members
+        if (existingMember.client_id === client_id) {
+          return NextResponse.json(
+            { error: "هذا المستخدم مرتبط بالفعل بهذا العميل" },
+            { status: 400 }
+          )
+        } else {
+          return NextResponse.json(
+            { error: "هذا البريد الإلكتروني مستخدم بالفعل لعميل آخر" },
+            { status: 400 }
+          )
+        }
       }
       
-      return NextResponse.json({ error: `خطأ في إنشاء الحساب: ${authError.message}` }, { status: 400 })
-    }
+      // User exists in Auth but NOT in team_members - reuse the auth user
+      console.log("Reusing existing auth user:", existingAuthUser.id)
+      authUserId = existingAuthUser.id
+      
+      // Update password and metadata for the existing user
+      await supabaseAdmin.auth.admin.updateUserById(existingAuthUser.id, {
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name,
+          role: "client",
+        },
+      })
+    } else {
+      // Create new user with admin API - email is automatically confirmed
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name,
+          role: "client",
+        },
+      })
 
-    if (!authData.user) {
-      return NextResponse.json({ error: "فشل في إنشاء المستخدم - لم يتم إرجاع بيانات" }, { status: 500 })
+      if (authError) {
+        console.error("Error creating auth user:", authError)
+        
+        if (authError.message.includes("already registered")) {
+          return NextResponse.json({ error: "البريد الإلكتروني مسجل بالفعل" }, { status: 400 })
+        }
+        if (authError.message.includes("password")) {
+          return NextResponse.json({ error: "كلمة المرور ضعيفة جداً" }, { status: 400 })
+        }
+        
+        return NextResponse.json({ error: `خطأ في إنشاء الحساب: ${authError.message}` }, { status: 400 })
+      }
+
+      if (!authData.user) {
+        return NextResponse.json({ error: "فشل في إنشاء المستخدم - لم يتم إرجاع بيانات" }, { status: 500 })
+      }
+      
+      authUserId = authData.user.id
     }
 
     // Create team member linked to auth user (without status if column doesn't exist)
     const insertData: Record<string, string> = {
-      user_id: authData.user.id,
+      user_id: authUserId,
       email,
       full_name,
       role: "client",
@@ -165,8 +199,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (memberError) {
-      // Rollback: delete auth user if team member creation fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      // Rollback: delete auth user if team member creation fails (only if we created a new user)
+      if (!existingAuthUser) {
+        await supabaseAdmin.auth.admin.deleteUser(authUserId)
+      }
       console.error("Error creating team member:", memberError)
       return NextResponse.json({ error: `خطأ في ربط المستخدم بالعميل: ${memberError.message}` }, { status: 500 })
     }
