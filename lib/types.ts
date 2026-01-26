@@ -40,6 +40,7 @@ export type TeamMember = {
   role: "admin" | "manager" | "writer" | "designer" | "client"
   client_id: string | null
   avatar_url: string | null
+  status: "active" | "inactive"
   created_at: string
 }
 

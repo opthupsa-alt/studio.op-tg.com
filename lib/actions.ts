@@ -849,64 +849,31 @@ export async function createClientUser(data: {
   client_id: string
   password: string
 }) {
-  const supabase = await createClient()
-
-  // Check if current user is admin/manager
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Unauthorized" }
-
-  const { data: currentMember } = await supabase
-    .from("team_members")
-    .select("role")
-    .eq("user_id", user.id)
-    .single()
-
-  if (!currentMember || !["admin", "manager"].includes(currentMember.role)) {
-    return { error: "Only admins and managers can create client users" }
-  }
-
-  // Create auth user using signUp
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email: data.email,
-    password: data.password,
-    options: {
-      data: {
-        full_name: data.full_name,
-        role: "client",
+  // Use server API route that has admin privileges
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/auth/create-client-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      emailRedirectTo: undefined,
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json()
+    
+    if (!response.ok) {
+      return { error: result.error || 'Failed to create user' }
     }
-  })
 
-  if (authError) {
-    console.error("Error creating auth user:", authError)
-    return { error: authError.message }
-  }
-
-  if (!authData.user) {
+    revalidatePath("/clients")
+    return { data: result.data }
+  } catch (error) {
+    console.error("Error creating client user:", error)
     return { error: "Failed to create user" }
   }
-
-  // Create team member linked to auth user
-  const { data: teamMember, error } = await supabase
-    .from("team_members")
-    .insert({
-      user_id: authData.user.id,
-      email: data.email,
-      full_name: data.full_name,
-      role: "client",
-      client_id: data.client_id,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error("Error creating client user:", error)
-    return { error: error.message }
-  }
-
-  revalidatePath("/clients")
-  return { data: teamMember }
 }
 
 export async function getClientUsers(clientId: string) {
@@ -952,6 +919,38 @@ export async function deleteClientUser(userId: string) {
 
   if (error) {
     console.error("Error deleting client user:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/clients")
+  return { success: true }
+}
+
+export async function toggleClientUserStatus(userId: string, status: "active" | "inactive") {
+  const supabase = await createClient()
+
+  // Check if current user is admin/manager
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  const { data: currentMember } = await supabase
+    .from("team_members")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  if (!currentMember || !["admin", "manager"].includes(currentMember.role)) {
+    return { error: "Only admins and managers can update client users" }
+  }
+
+  const { error } = await supabase
+    .from("team_members")
+    .update({ status })
+    .eq("id", userId)
+    .eq("role", "client")
+
+  if (error) {
+    console.error("Error updating client user status:", error)
     return { error: error.message }
   }
 

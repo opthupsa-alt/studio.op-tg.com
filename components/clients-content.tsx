@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Building2, MoreHorizontal, Edit, Trash2, Globe, Users, UserPlus, Eye, EyeOff, Upload, Image as ImageIcon } from "lucide-react"
+import { Plus, Building2, MoreHorizontal, Edit, Trash2, Globe, Users, UserPlus, Eye, EyeOff, Upload, Image as ImageIcon, Power, PowerOff, ChevronDown, ChevronUp, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClientRecord, updateClientRecord, deleteClientRecord, createClientUser, deleteClientUser } from "@/lib/actions"
+import { createClientRecord, updateClientRecord, deleteClientRecord, createClientUser, deleteClientUser, toggleClientUserStatus, getClientUsers } from "@/lib/actions"
 import {
   Card,
   CardContent,
@@ -40,7 +40,7 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { PlatformIcon } from "@/components/platform-icon"
-import type { Client, Platform } from "@/lib/types"
+import type { Client, Platform, TeamMember } from "@/lib/types"
 
 interface ClientsContentProps {
   clients: Client[]
@@ -72,6 +72,11 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
   const [newUserEmail, setNewUserEmail] = useState("")
   const [newUserPassword, setNewUserPassword] = useState("")
   const [showUserPassword, setShowUserPassword] = useState(false)
+  
+  // Client Users Display state
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set())
+  const [clientUsers, setClientUsers] = useState<Record<string, TeamMember[]>>({})
+  const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set())
 
   const handleEditClient = (client: Client) => {
     setEditingClient(client)
@@ -129,6 +134,66 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
     setNewUserEmail("")
     setNewUserPassword("")
     setIsClientUserDialogOpen(true)
+  }
+
+  const toggleClientExpanded = async (clientId: string) => {
+    const newExpanded = new Set(expandedClients)
+    if (newExpanded.has(clientId)) {
+      newExpanded.delete(clientId)
+    } else {
+      newExpanded.add(clientId)
+      // Load users if not already loaded
+      if (!clientUsers[clientId]) {
+        setLoadingUsers(prev => new Set(prev).add(clientId))
+        const result = await getClientUsers(clientId)
+        if (result.data) {
+          setClientUsers(prev => ({ ...prev, [clientId]: result.data as TeamMember[] }))
+        }
+        setLoadingUsers(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(clientId)
+          return newSet
+        })
+      }
+    }
+    setExpandedClients(newExpanded)
+  }
+
+  const handleToggleUserStatus = async (user: TeamMember) => {
+    const newStatus = user.status === 'active' ? 'inactive' : 'active'
+    const result = await toggleClientUserStatus(user.id, newStatus)
+    if (result.error) {
+      alert(result.error)
+    } else {
+      // Update local state
+      if (user.client_id) {
+        setClientUsers(prev => ({
+          ...prev,
+          [user.client_id!]: prev[user.client_id!]?.map(u => 
+            u.id === user.id ? { ...u, status: newStatus } : u
+          ) || []
+        }))
+      }
+      router.refresh()
+    }
+  }
+
+  const handleDeleteUser = async (user: TeamMember) => {
+    if (!confirm(`هل أنت متأكد من حذف المستخدم "${user.full_name}"؟`)) return
+    
+    const result = await deleteClientUser(user.id)
+    if (result.error) {
+      alert(result.error)
+    } else {
+      // Update local state
+      if (user.client_id) {
+        setClientUsers(prev => ({
+          ...prev,
+          [user.client_id!]: prev[user.client_id!]?.filter(u => u.id !== user.id) || []
+        }))
+      }
+      router.refresh()
+    }
   }
 
   const handleCreateClientUser = async () => {
@@ -385,7 +450,97 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
                       <Badge variant={client.status === "active" ? "default" : "secondary"}>
                         {client.status === "active" ? "نشط" : "غير نشط"}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleClientExpanded(client.id)}
+                        className="text-xs gap-1"
+                      >
+                        <Users className="size-3" />
+                        المستخدمين
+                        {expandedClients.has(client.id) ? (
+                          <ChevronUp className="size-3" />
+                        ) : (
+                          <ChevronDown className="size-3" />
+                        )}
+                      </Button>
                     </div>
+                    
+                    {/* Client Users Section */}
+                    {expandedClients.has(client.id) && (
+                      <div className="pt-3 border-t space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">مستخدمي العميل</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddClientUser(client)}
+                            className="h-6 text-xs"
+                          >
+                            <UserPlus className="size-3 ml-1" />
+                            إضافة
+                          </Button>
+                        </div>
+                        
+                        {loadingUsers.has(client.id) ? (
+                          <p className="text-xs text-muted-foreground text-center py-2">جاري التحميل...</p>
+                        ) : clientUsers[client.id]?.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-2">لا يوجد مستخدمين</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {clientUsers[client.id]?.map((user) => (
+                              <div 
+                                key={user.id} 
+                                className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                                    {user.full_name.charAt(0)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium truncate">{user.full_name}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
+                                      <Mail className="size-2.5" />
+                                      {user.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Badge 
+                                    variant={user.status === 'active' ? 'default' : 'secondary'}
+                                    className="text-[10px] h-5"
+                                  >
+                                    {user.status === 'active' ? 'نشط' : 'موقف'}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleToggleUserStatus(user)}
+                                    title={user.status === 'active' ? 'إيقاف' : 'تفعيل'}
+                                  >
+                                    {user.status === 'active' ? (
+                                      <PowerOff className="size-3 text-orange-500" />
+                                    ) : (
+                                      <Power className="size-3 text-green-500" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive"
+                                    onClick={() => handleDeleteUser(user)}
+                                    title="حذف"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
