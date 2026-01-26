@@ -161,7 +161,7 @@ export function PostSidePanel({
     setIsSaving(true)
     try {
       // Save post first
-      await onSave({
+      const saveData = {
         id: post?.id,
         title,
         description: mainContent || undefined,
@@ -170,7 +170,9 @@ export function PostSidePanel({
         status,
         publish_date: publishDate ? format(publishDate, "yyyy-MM-dd") : undefined,
         platform_ids: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
-      })
+      }
+      console.log("PostSidePanel saving with:", saveData)
+      await onSave(saveData)
 
     // Save variants if post exists and has variants
       if (post?.id && variants.length > 0) {

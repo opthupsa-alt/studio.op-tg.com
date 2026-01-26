@@ -242,7 +242,8 @@ export function DashboardContent({
       }
     } else if (selectedPost) {
       // Update existing post
-      const result = await updatePost(selectedPost.id, {
+      console.log("Updating post with data:", data)
+      const updateData = {
         title: data.title,
         description: (data as any).description || undefined,
         main_goal: data.main_goal || undefined,
@@ -250,7 +251,9 @@ export function DashboardContent({
         status: data.status,
         publish_date: data.publish_date,
         platform_ids: (data as any).platform_ids || undefined,
-      })
+      }
+      console.log("Prepared update data:", updateData)
+      const result = await updatePost(selectedPost.id, updateData)
 
       if (result.error) {
         console.error("Error updating post:", result.error)

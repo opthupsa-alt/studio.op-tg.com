@@ -80,6 +80,7 @@ export async function updatePost(
     platform_ids?: string[]
   }
 ) {
+  console.log("updatePost called with:", { id, data })
   const supabase = await createClient()
 
   // Get current user's role
