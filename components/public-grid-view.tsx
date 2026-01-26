@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { ImageIcon, Video, Film, Camera, Layers, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { ImageIcon, Video, Film, Camera, Layers, Clock, ArrowUp, ArrowDown, CheckCircle2, XCircle, Clock3 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -88,7 +88,7 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
         const formattedDate = format(publishDate, "d MMMM yyyy", { locale: ar })
 
         return (
-          <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
             {/* Color indicator */}
             {clientColor && (
               <div
@@ -108,10 +108,27 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
                   {postType.label}
                 </Badge>
 
-                {/* الحالة */}
-                <Badge variant="secondary" className={cn("text-xs", status.className)}>
-                  {status.label}
-                </Badge>
+                {/* شارة الاعتماد */}
+                {post.status === 'approved' ? (
+                  <Badge className="text-xs flex items-center gap-1 bg-green-500 text-white">
+                    <CheckCircle2 className="size-3" />
+                    معتمد
+                  </Badge>
+                ) : post.status === 'rejected' ? (
+                  <Badge className="text-xs flex items-center gap-1 bg-red-500 text-white">
+                    <XCircle className="size-3" />
+                    مرفوض
+                  </Badge>
+                ) : post.status === 'client_review' ? (
+                  <Badge className="text-xs flex items-center gap-1 bg-orange-500 text-white">
+                    <Clock3 className="size-3" />
+                    بانتظار الاعتماد
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className={cn("text-xs", status.className)}>
+                    {status.label}
+                  </Badge>
+                )}
               </div>
 
               {/* العنوان */}
@@ -120,7 +137,7 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
               </h3>
             </CardHeader>
 
-            <CardContent className="pb-3">
+            <CardContent className="pb-3 flex-1">
               {/* الوصف */}
               {post.description ? (
                 <p className="text-sm text-muted-foreground line-clamp-3">
@@ -146,8 +163,8 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
               )}
             </CardContent>
 
-            <CardFooter className="pt-3 border-t bg-muted/30">
-              {/* التاريخ */}
+            <CardFooter className="pt-3 border-t bg-muted/30 mt-auto">
+              {/* التاريخ - ثابت في الأسفل */}
               <div className="w-full text-center">
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Clock className="size-4" />
