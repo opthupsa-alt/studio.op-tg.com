@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDays, ArrowRight } from "lucide-react"
+import { CalendarDays, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -30,6 +30,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import type { Client } from "@/lib/types"
 
 const months = [
   { value: "1", label: "يناير" },
@@ -51,10 +53,31 @@ const years = Array.from({ length: 3 }, (_, i) => currentYear + i)
 
 export default function NewPlanPage() {
   const router = useRouter()
+  const [clients, setClients] = useState<Client[]>([])
+  const [isLoadingClients, setIsLoadingClients] = useState(true)
   const [selectedClient, setSelectedClient] = useState("")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedYear, setSelectedYear] = useState(currentYear.toString())
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("name")
+      
+      if (error) {
+        console.error("Error fetching clients:", error)
+      } else {
+        setClients(data || [])
+      }
+      setIsLoadingClients(false)
+    }
+
+    fetchClients()
+  }, [])
 
   const handleCreatePlan = async () => {
     if (!selectedClient || !selectedMonth || !selectedYear) return
@@ -112,12 +135,24 @@ export default function NewPlanPage() {
                 <Label>العميل</Label>
                 <Select value={selectedClient} onValueChange={setSelectedClient}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر العميل..." />
+                    <SelectValue placeholder={isLoadingClients ? "جاري التحميل..." : "اختر العميل..."} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="client-1">حلول التقنية</SelectItem>
-                    <SelectItem value="client-2">الأغذية الخضراء</SelectItem>
-                    <SelectItem value="client-3">بيت الأزياء</SelectItem>
+                    {isLoadingClients ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                    ) : clients.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        لا يوجد عملاء. <Link href="/clients" className="text-primary hover:underline">أضف عميل جديد</Link>
+                      </div>
+                    ) : (
+                      clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
