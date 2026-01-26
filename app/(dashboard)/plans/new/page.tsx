@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CalendarDays, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -53,6 +53,9 @@ const years = Array.from({ length: 3 }, (_, i) => currentYear + i)
 
 export default function NewPlanPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const clientFromUrl = searchParams.get("client")
+  
   const [clients, setClients] = useState<Client[]>([])
   const [isLoadingClients, setIsLoadingClients] = useState(true)
   const [selectedClient, setSelectedClient] = useState("")
@@ -72,12 +75,16 @@ export default function NewPlanPage() {
         console.error("Error fetching clients:", error)
       } else {
         setClients(data || [])
+        // Set client from URL if provided
+        if (clientFromUrl && data?.some(c => c.id === clientFromUrl)) {
+          setSelectedClient(clientFromUrl)
+        }
       }
       setIsLoadingClients(false)
     }
 
     fetchClients()
-  }, [])
+  }, [clientFromUrl])
 
   const handleCreatePlan = async () => {
     if (!selectedClient || !selectedMonth || !selectedYear) return

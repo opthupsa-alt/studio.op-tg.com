@@ -123,6 +123,7 @@ export function PostSidePanel({
   const [newComment, setNewComment] = useState("")
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isUploadingFile, setIsUploadingFile] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
   const publishDate = scheduledDate; // Declare publishDate variable
 
@@ -135,7 +136,8 @@ export function PostSidePanel({
       setScheduledDate(post.publish_date ? new Date(post.publish_date) : undefined)
       setSelectedPlatforms(post.platforms?.map((p) => p.id) || [])
       setVariants(post.variants || [])
-    } else {
+      setNewComment("")
+    } else if (isNew) {
       // Reset for new post
       setTitle("")
       setMainGoal("")
@@ -144,50 +146,62 @@ export function PostSidePanel({
       setScheduledDate(defaultDate)
       setSelectedPlatforms([])
       setVariants([])
+      setNewComment("")
+      setActiveTab("content")
     }
-  }, [post, defaultDate])
+  }, [post, defaultDate, isNew, isOpen])
 
   const handleSave = async () => {
-    // Save post first
-    onSave({
-      id: post?.id,
-      title,
-      main_goal: mainGoal as Post["main_goal"],
-      post_type: postType as Post["post_type"],
-      status,
-      publish_date: publishDate?.toISOString().split("T")[0],
-    })
+    if (isSaving) return // Prevent double submission
+    
+    setIsSaving(true)
+    try {
+      // Save post first
+      await onSave({
+        id: post?.id,
+        title,
+        main_goal: mainGoal as Post["main_goal"],
+        post_type: postType as Post["post_type"],
+        status,
+        publish_date: publishDate?.toISOString().split("T")[0],
+      })
 
     // Save variants if post exists and has variants
-    if (post?.id && variants.length > 0) {
-      for (const variant of variants) {
-        if (variant.platform_id && variant.caption) {
-          // Check if variant already exists
-          const existingVariant = post.variants?.find(
-            (v) => v.platform_id === variant.platform_id
-          )
-          
-          if (existingVariant) {
-            // Update existing variant
-            await updatePostVariant(existingVariant.id, {
-              caption: variant.caption || undefined,
-              hashtags: variant.hashtags || undefined,
-              cta: variant.cta || undefined,
-              design_notes: variant.design_notes || undefined,
-            })
-          } else {
-            // Create new variant
-            await createPostVariant({
-              post_id: post.id,
-              platform_id: variant.platform_id,
-              caption: variant.caption || undefined,
-              hashtags: variant.hashtags || undefined,
-              cta: variant.cta || undefined,
-              design_notes: variant.design_notes || undefined,
-            })
+      if (post?.id && variants.length > 0) {
+        for (const variant of variants) {
+          if (variant.platform_id && variant.caption) {
+            // Check if variant already exists
+            const existingVariant = post.variants?.find(
+              (v) => v.platform_id === variant.platform_id
+            )
+            
+            if (existingVariant) {
+              // Update existing variant
+              await updatePostVariant(existingVariant.id, {
+                caption: variant.caption || undefined,
+                hashtags: variant.hashtags || undefined,
+                cta: variant.cta || undefined,
+                design_notes: variant.design_notes || undefined,
+              })
+            } else {
+              // Create new variant
+              await createPostVariant({
+                post_id: post.id,
+                platform_id: variant.platform_id,
+                caption: variant.caption || undefined,
+                hashtags: variant.hashtags || undefined,
+                cta: variant.cta || undefined,
+                design_notes: variant.design_notes || undefined,
+              })
+            }
           }
         }
       }
+    } catch (error) {
+      console.error("Error saving post:", error)
+      alert("حدث خطأ أثناء حفظ المنشور")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -685,9 +699,18 @@ export function PostSidePanel({
               إرسال للمراجعة
             </Button>
           )}
-          <Button className="w-full" onClick={handleSave}>
-            <Save className="size-4 ml-2" />
-            {isNew ? "إنشاء المنشور" : "حفظ التغييرات"}
+          <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <div className="size-4 ml-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {isNew ? "جاري الإنشاء..." : "جاري الحفظ..."}
+              </>
+            ) : (
+              <>
+                <Save className="size-4 ml-2" />
+                {isNew ? "إنشاء المنشور" : "حفظ التغييرات"}
+              </>
+            )}
           </Button>
         </div>
       </SheetContent>
