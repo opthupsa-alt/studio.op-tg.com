@@ -120,21 +120,21 @@ export function InstagramMockup({ posts, client, showApprovalBadges = true }: In
   }
 
   return (
-    <div className="max-w-[470px] mx-auto bg-white dark:bg-zinc-950 border rounded-xl overflow-hidden shadow-lg">
+    <div className="w-full max-w-4xl mx-auto bg-white dark:bg-zinc-950 border rounded-xl overflow-hidden shadow-lg">
       {/* Instagram Profile Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-4">
+      <div className="p-6 border-b">
+        <div className="flex items-center gap-8">
           {/* Profile Picture */}
           <div className="relative">
             {client?.icon_url || client?.logo_url ? (
               <img
                 src={client.icon_url || client.logo_url || ""}
                 alt={client.name}
-                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                className="w-28 h-28 rounded-full object-cover border-4 border-gray-200"
               />
             ) : (
               <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold"
+                className="w-28 h-28 rounded-full flex items-center justify-center text-white text-4xl font-bold"
                 style={{ backgroundColor: client?.brand_primary_color || "#3b82f6" }}
               >
                 {client?.name?.charAt(0) || "?"}
@@ -144,19 +144,19 @@ export function InstagramMockup({ posts, client, showApprovalBadges = true }: In
           
           {/* Stats */}
           <div className="flex-1">
-            <h2 className="font-bold text-lg mb-2">{client?.name || "العميل"}</h2>
-            <div className="flex gap-6 text-sm">
+            <h2 className="font-bold text-2xl mb-4">{client?.name || "العميل"}</h2>
+            <div className="flex gap-10 text-base">
               <div className="text-center">
-                <span className="font-bold">{posts.length}</span>
-                <p className="text-muted-foreground text-xs">منشور</p>
+                <span className="font-bold text-xl">{posts.length}</span>
+                <p className="text-muted-foreground">منشور</p>
               </div>
               <div className="text-center">
-                <span className="font-bold">-</span>
-                <p className="text-muted-foreground text-xs">متابع</p>
+                <span className="font-bold text-xl">-</span>
+                <p className="text-muted-foreground">متابع</p>
               </div>
               <div className="text-center">
-                <span className="font-bold">-</span>
-                <p className="text-muted-foreground text-xs">متابَع</p>
+                <span className="font-bold text-xl">-</span>
+                <p className="text-muted-foreground">متابَع</p>
               </div>
             </div>
           </div>
@@ -168,33 +168,33 @@ export function InstagramMockup({ posts, client, showApprovalBadges = true }: In
         <button
           onClick={() => setActiveTab("posts")}
           className={cn(
-            "flex-1 py-3 flex items-center justify-center gap-2 text-sm border-b-2 transition-colors",
+            "flex-1 py-4 flex items-center justify-center gap-2 text-base border-b-2 transition-colors",
             activeTab === "posts" 
               ? "border-black dark:border-white text-foreground" 
               : "border-transparent text-muted-foreground"
           )}
         >
-          <Grid3X3 className="size-4" />
+          <Grid3X3 className="size-5" />
           <span>المنشورات</span>
-          <Badge variant="secondary" className="text-xs">{regularPosts.length}</Badge>
+          <Badge variant="secondary">{regularPosts.length}</Badge>
         </button>
         <button
           onClick={() => setActiveTab("reels")}
           className={cn(
-            "flex-1 py-3 flex items-center justify-center gap-2 text-sm border-b-2 transition-colors",
+            "flex-1 py-4 flex items-center justify-center gap-2 text-base border-b-2 transition-colors",
             activeTab === "reels" 
               ? "border-black dark:border-white text-foreground" 
               : "border-transparent text-muted-foreground"
           )}
         >
-          <Film className="size-4" />
+          <Film className="size-5" />
           <span>ريلز</span>
-          <Badge variant="secondary" className="text-xs">{reelsPosts.length}</Badge>
+          <Badge variant="secondary">{reelsPosts.length}</Badge>
         </button>
       </div>
 
       {/* Posts Grid */}
-      <div className="grid grid-cols-3 gap-0.5 bg-gray-100 dark:bg-zinc-800">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-gray-100 dark:bg-zinc-800">
         {displayPosts.length === 0 ? (
           <div className="col-span-3 py-16 text-center text-muted-foreground">
             <ImageIcon className="size-12 mx-auto mb-2 opacity-50" />
