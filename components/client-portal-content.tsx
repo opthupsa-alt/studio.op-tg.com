@@ -51,6 +51,8 @@ import { Separator } from "@/components/ui/separator"
 import { PlatformIcon } from "@/components/platform-icon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { InstagramMockup } from "@/components/instagram-mockup"
+import { Grid3X3, LayoutGrid, Instagram } from "lucide-react"
 import { approvePost, rejectPost, addComment } from "@/lib/actions"
 import type { Post, Platform, Client, Comment, PostType } from "@/lib/types"
 import { STATUS_LABELS, STATUS_COLORS, POST_TYPE_LABELS } from "@/lib/types"
@@ -96,7 +98,34 @@ export function ClientPortalContent({
   const [newComment, setNewComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("pending")
-  const [currentDate, setCurrentDate] = useState(new Date(currentYear, currentMonth - 1))
+  const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
+  
+  // Find the month with pending reviews first, or current month
+  const getInitialMonth = () => {
+    // First check if there are pending posts
+    const pendingPost = posts.find(p => p.status === "client_review")
+    if (pendingPost) {
+      const date = parseLocalDate(pendingPost.publish_date)
+      return new Date(date.getFullYear(), date.getMonth())
+    }
+    // Otherwise use current month if it has posts
+    const currentHasPosts = posts.some(p => {
+      const d = parseLocalDate(p.publish_date)
+      return d.getFullYear() === currentYear && d.getMonth() === currentMonth - 1
+    })
+    if (currentHasPosts) {
+      return new Date(currentYear, currentMonth - 1)
+    }
+    // Otherwise use the first available month with posts
+    if (posts.length > 0) {
+      const firstPost = posts[0]
+      const date = parseLocalDate(firstPost.publish_date)
+      return new Date(date.getFullYear(), date.getMonth())
+    }
+    return new Date(currentYear, currentMonth - 1)
+  }
+  
+  const [currentDate, setCurrentDate] = useState(getInitialMonth)
 
   // Get available months that have posts
   const availableMonths = useMemo(() => {
@@ -349,19 +378,53 @@ export function ClientPortalContent({
               </div>
             </div>
             
-            {/* Month Navigation */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-                <ChevronRight className="size-4" />
-              </Button>
-              <div className="px-4 py-2 bg-muted rounded-lg min-w-[160px] text-center">
-                <span className="font-semibold">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </span>
+            {/* View Mode & Month Navigation */}
+            <div className="flex items-center gap-4">
+              {/* View Mode Switcher */}
+              <div className="hidden sm:flex items-center bg-muted rounded-lg p-1">
+                <Button
+                  variant={viewMode === "tabs" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("tabs")}
+                  className="gap-1.5"
+                >
+                  <LayoutGrid className="size-4" />
+                  <span className="hidden md:inline">تبويبات</span>
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className="gap-1.5"
+                >
+                  <Grid3X3 className="size-4" />
+                  <span className="hidden md:inline">شبكي</span>
+                </Button>
+                <Button
+                  variant={viewMode === "instagram" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("instagram")}
+                  className="gap-1.5"
+                >
+                  <Instagram className="size-4" />
+                  <span className="hidden md:inline">انستجرام</span>
+                </Button>
               </div>
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
-                <ChevronLeft className="size-4" />
-              </Button>
+
+              {/* Month Navigation */}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                  <ChevronRight className="size-4" />
+                </Button>
+                <div className="px-4 py-2 bg-muted rounded-lg min-w-[140px] text-center">
+                  <span className="font-semibold text-sm">
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </span>
+                </div>
+                <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                  <ChevronLeft className="size-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </header>
@@ -412,78 +475,79 @@ export function ClientPortalContent({
             </Card>
           )}
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 h-12">
-              <TabsTrigger value="pending" className="gap-2">
-                <Clock className="size-4" />
-                <span className="hidden sm:inline">بانتظار الموافقة</span>
-                {stats.pending > 0 && (
-                  <Badge variant="secondary" className="mr-1">{stats.pending}</Badge>
+          {/* View Mode: Tabs */}
+          {viewMode === "tabs" && (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4 h-12">
+                <TabsTrigger value="pending" className="gap-2">
+                  <Clock className="size-4" />
+                  <span className="hidden sm:inline">بانتظار الموافقة</span>
+                  {stats.pending > 0 && (
+                    <Badge variant="secondary" className="mr-1">{stats.pending}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="gap-2">
+                  <CheckCircle2 className="size-4" />
+                  <span className="hidden sm:inline">تمت الموافقة</span>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="gap-2">
+                  <XCircle className="size-4" />
+                  <span className="hidden sm:inline">مرفوض</span>
+                </TabsTrigger>
+                <TabsTrigger value="progress" className="gap-2">
+                  <BarChart3 className="size-4" />
+                  <span className="hidden sm:inline">قيد التحضير</span>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Pending Review Tab */}
+              <TabsContent value="pending">
+                {pendingReview.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {pendingReview.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="p-12 text-center">
+                    <CheckCheck className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">لا توجد منشورات بانتظار موافقتك</h3>
+                    <p className="text-muted-foreground">عمل رائع! جميع المنشورات تمت مراجعتها</p>
+                  </Card>
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="approved" className="gap-2">
-                <CheckCircle2 className="size-4" />
-                <span className="hidden sm:inline">تمت الموافقة</span>
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="gap-2">
-                <XCircle className="size-4" />
-                <span className="hidden sm:inline">مرفوض</span>
-              </TabsTrigger>
-              <TabsTrigger value="progress" className="gap-2">
-                <BarChart3 className="size-4" />
-                <span className="hidden sm:inline">قيد التحضير</span>
-              </TabsTrigger>
-            </TabsList>
+              </TabsContent>
 
-            {/* Pending Review Tab */}
-            <TabsContent value="pending">
-              {pendingReview.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {pendingReview.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-12 text-center">
-                  <CheckCheck className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات بانتظار موافقتك</h3>
-                  <p className="text-muted-foreground">عمل رائع! جميع المنشورات تمت مراجعتها</p>
-                </Card>
-              )}
-            </TabsContent>
+              {/* Approved Tab */}
+              <TabsContent value="approved">
+                {approved.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {approved.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="p-12 text-center">
+                    <FileText className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">لا توجد منشورات معتمدة</h3>
+                    <p className="text-muted-foreground">المنشورات المعتمدة ستظهر هنا</p>
+                  </Card>
+                )}
+              </TabsContent>
 
-            {/* Approved Tab */}
-            <TabsContent value="approved">
-              {approved.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {approved.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-12 text-center">
-                  <FileText className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات معتمدة</h3>
-                  <p className="text-muted-foreground">المنشورات المعتمدة ستظهر هنا</p>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Rejected Tab */}
-            <TabsContent value="rejected">
-              {rejected.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {rejected.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-12 text-center">
-                  <ThumbsUp className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات مرفوضة</h3>
-                  <p className="text-muted-foreground">ممتاز! لم يتم رفض أي منشور</p>
-                </Card>
+              {/* Rejected Tab */}
+              <TabsContent value="rejected">
+                {rejected.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {rejected.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="p-12 text-center">
+                    <ThumbsUp className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">لا توجد منشورات مرفوضة</h3>
+                    <p className="text-muted-foreground">ممتاز! لم يتم رفض أي منشور</p>
+                  </Card>
               )}
             </TabsContent>
 
@@ -503,10 +567,41 @@ export function ClientPortalContent({
                 </Card>
               )}
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          )}
 
-          {/* Empty State for whole month */}
-          {currentMonthPosts.length === 0 && (
+          {/* View Mode: Grid */}
+          {viewMode === "grid" && (
+            <div className="space-y-6">
+              {currentMonthPosts.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {currentMonthPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <Grid3X3 className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات لهذا الشهر</h3>
+                  <p className="text-muted-foreground">جرب التنقل لشهر آخر</p>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* View Mode: Instagram Mockup */}
+          {viewMode === "instagram" && (
+            <div className="flex justify-center py-4">
+              <InstagramMockup
+                posts={currentMonthPosts}
+                client={client}
+                showApprovalBadges={true}
+              />
+            </div>
+          )}
+
+          {/* Empty State for whole month - only show in tabs mode */}
+          {viewMode === "tabs" && currentMonthPosts.length === 0 && (
             <Card className="p-16 text-center mt-8">
               <Calendar className="size-20 mx-auto mb-6 text-primary opacity-30" />
               <h3 className="text-2xl font-bold mb-3">لا توجد منشورات لهذا الشهر</h3>
