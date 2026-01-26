@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { parseLocalDate } from "@/lib/date-utils"
-import { format } from "date-fns"
+import { format, addMonths, subMonths } from "date-fns"
 import { ar } from "date-fns/locale"
 import {
   CheckCircle2,
@@ -14,12 +14,29 @@ import {
   Send,
   ChevronRight,
   ChevronLeft,
+  Home,
+  FileText,
+  BarChart3,
+  Bell,
+  Settings,
+  LogOut,
+  Eye,
+  Image as ImageIcon,
+  Play,
+  Layers,
+  ThumbsUp,
+  ThumbsDown,
+  AlertCircle,
+  CheckCheck,
+  X,
+  Moon,
+  Sun,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -32,9 +49,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { PlatformIcon } from "@/components/platform-icon"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
 import { approvePost, rejectPost, addComment } from "@/lib/actions"
-import type { Post, Platform, Client, Comment } from "@/lib/types"
+import type { Post, Platform, Client, Comment, PostType } from "@/lib/types"
 import { STATUS_LABELS, STATUS_COLORS, POST_TYPE_LABELS } from "@/lib/types"
+import { useTheme } from "next-themes"
+import { createClient } from "@/lib/supabase/client"
 
 interface ClientPortalContentProps {
   client: Client
@@ -49,6 +70,16 @@ const monthNames = [
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
 ]
 
+const POST_TYPE_ICONS: Record<PostType, typeof ImageIcon> = {
+  post: ImageIcon,
+  reel: Play,
+  video: Play,
+  story: Eye,
+  carousel: Layers,
+}
+
+const DEFAULT_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-size='48'%3E📷%3C/text%3E%3C/svg%3E"
+
 export function ClientPortalContent({
   client,
   posts,
@@ -57,23 +88,61 @@ export function ClientPortalContent({
   currentMonth,
 }: ClientPortalContentProps) {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null)
   const [feedback, setFeedback] = useState("")
   const [newComment, setNewComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState("pending")
+  const [currentDate, setCurrentDate] = useState(new Date(currentYear, currentMonth - 1))
 
-  // Filter posts for current month
-  const currentMonthPosts = posts.filter((post) => {
-    const postDate = parseLocalDate(post.publish_date)
-    return postDate.getFullYear() === currentYear && postDate.getMonth() + 1 === currentMonth
-  })
+  // Filter posts for selected month
+  const currentMonthPosts = useMemo(() => {
+    return posts.filter((post) => {
+      const postDate = parseLocalDate(post.publish_date)
+      return postDate.getFullYear() === currentDate.getFullYear() && 
+             postDate.getMonth() === currentDate.getMonth()
+    })
+  }, [posts, currentDate])
 
   // Group posts by status
   const pendingReview = currentMonthPosts.filter((p) => p.status === "client_review")
   const approved = currentMonthPosts.filter((p) => p.status === "approved" || p.status === "scheduled" || p.status === "posted")
+  const rejected = currentMonthPosts.filter((p) => p.status === "rejected")
   const inProgress = currentMonthPosts.filter((p) => !["client_review", "approved", "scheduled", "posted", "rejected"].includes(p.status))
+
+  // Stats
+  const stats = useMemo(() => ({
+    total: currentMonthPosts.length,
+    pending: pendingReview.length,
+    approved: approved.length,
+    rejected: rejected.length,
+    inProgress: inProgress.length,
+    approvalRate: currentMonthPosts.length > 0 
+      ? Math.round((approved.length / (approved.length + rejected.length || 1)) * 100) 
+      : 0
+  }), [currentMonthPosts, pendingReview, approved, rejected, inProgress])
+
+  // Get post image
+  const getPostImage = (post: Post): string => {
+    if ((post as any).cover_url) return (post as any).cover_url
+    const imageAsset = post.assets?.find(a => a.type === "image")
+    if (imageAsset?.url) return imageAsset.url
+    return DEFAULT_PLACEHOLDER
+  }
+
+  // Navigate months
+  const handlePrevMonth = () => setCurrentDate(prev => subMonths(prev, 1))
+  const handleNextMonth = () => setCurrentDate(prev => addMonths(prev, 1))
+
+  // Logout
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
 
   const handlePostClick = (post: Post) => {
     setSelectedPost(post)
@@ -127,51 +196,65 @@ export function ClientPortalContent({
     }
   }
 
-  const PostCard = ({ post }: { post: Post }) => {
+  // Enhanced Post Card with Image
+  const PostCard = ({ post, showActions = false }: { post: Post; showActions?: boolean }) => {
     const isReviewable = post.status === "client_review"
+    const TypeIcon = post.post_type ? POST_TYPE_ICONS[post.post_type] : ImageIcon
     
     return (
       <Card 
         className={cn(
-          "cursor-pointer hover:shadow-md transition-shadow",
-          isReviewable && "border-orange-300 dark:border-orange-700"
+          "group cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden",
+          isReviewable && "ring-2 ring-orange-400 dark:ring-orange-600"
         )}
         onClick={() => handlePostClick(post)}
       >
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-base line-clamp-2">{post.title}</CardTitle>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge className={STATUS_COLORS[post.status]}>
-                  {STATUS_LABELS[post.status]}
-                </Badge>
-                {post.post_type && (
-                  <Badge variant="outline" className="text-xs">
-                    {POST_TYPE_LABELS[post.post_type]}
-                  </Badge>
-                )}
-              </div>
+        {/* Image */}
+        <div className="relative aspect-square bg-muted overflow-hidden">
+          <img 
+            src={getPostImage(post)} 
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          {/* Overlay with type icon */}
+          <div className="absolute top-2 right-2">
+            <div className="bg-black/60 rounded-full p-1.5">
+              <TypeIcon className="size-4 text-white" />
             </div>
-            {isReviewable && (
-              <Badge className="bg-orange-500 text-white">
-                بانتظار موافقتك
-              </Badge>
-            )}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {/* Status badge */}
+          <div className="absolute top-2 left-2">
+            <Badge className={cn(STATUS_COLORS[post.status], "shadow-lg")}>
+              {STATUS_LABELS[post.status]}
+            </Badge>
+          </div>
+          {/* Review overlay */}
+          {isReviewable && (
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-500/80 to-transparent flex items-end justify-center pb-4">
+              <Badge className="bg-white text-orange-600 shadow-lg text-sm px-3 py-1">
+                ⏳ بانتظار موافقتك
+              </Badge>
+            </div>
+          )}
+        </div>
+        {/* Content */}
+        <CardContent className="p-4">
+          <h3 className="font-semibold line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+            {post.title}
+          </h3>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
-              <Calendar className="size-4" />
-              {format(parseLocalDate(post.publish_date), "d MMMM", { locale: ar })}
+              <Calendar className="size-3.5" />
+              {format(parseLocalDate(post.publish_date), "d MMM", { locale: ar })}
             </div>
             <div className="flex items-center gap-1">
               {post.platforms?.slice(0, 3).map((platform) => (
                 <PlatformIcon key={platform.id} platform={platform.key} size="xs" />
               ))}
               {(post.platforms?.length || 0) > 3 && (
-                <span className="text-xs">+{(post.platforms?.length || 0) - 3}</span>
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                  +{(post.platforms?.length || 0) - 3}
+                </span>
               )}
             </div>
           </div>
@@ -180,89 +263,291 @@ export function ClientPortalContent({
     )
   }
 
+  // Stats Card Component
+  const StatCard = ({ icon: Icon, label, value, color, onClick }: { 
+    icon: any; label: string; value: number; color: string; onClick?: () => void 
+  }) => (
+    <Card 
+      className={cn(
+        "cursor-pointer hover:shadow-md transition-all",
+        onClick && "hover:scale-[1.02]"
+      )}
+      onClick={onClick}
+    >
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className={cn("p-3 rounded-xl", color)}>
+          <Icon className="size-6 text-white" />
+        </div>
+        <div>
+          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background px-4 sm:px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-              style={{ backgroundColor: client.brand_primary_color || "#3B82F6" }}
-            >
-              {client.name.charAt(0)}
-            </div>
+    <div className="flex h-screen bg-muted/30">
+      {/* Sidebar */}
+      <aside className="hidden md:flex w-64 flex-col bg-background border-l">
+        {/* Logo & Client */}
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3 mb-4">
+            <img 
+              src="/opt-logo.png" 
+              alt="الهدف الأمثل" 
+              className="w-10 h-10 object-contain"
+            />
             <div>
-              <h1 className="text-xl font-bold">{client.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                خطة المحتوى - {monthNames[currentMonth - 1]} {currentYear}
-              </p>
+              <p className="font-bold text-sm">الهدف الأمثل</p>
+              <p className="text-xs text-muted-foreground">للتسويق</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {currentMonthPosts.length} منشور
-            </span>
+          <Separator />
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">بوابة العميل</p>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto p-4 sm:p-6">
-        {/* Pending Review Section */}
-        {pendingReview.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="size-5 text-orange-500" />
-              <h2 className="text-lg font-semibold">بانتظار موافقتك ({pendingReview.length})</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pendingReview.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            <li>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-3 bg-primary/10 text-primary"
+              >
+                <Home className="size-5" />
+                المنشورات
+              </Button>
+            </li>
+          </ul>
+        </nav>
 
-        {/* Approved Section */}
-        {approved.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <CheckCircle2 className="size-5 text-green-500" />
-              <h2 className="text-lg font-semibold">تمت الموافقة ({approved.length})</h2>
+        {/* Footer */}
+        <div className="p-4 border-t space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            الوضع الداكن
+          </Button>
+          <Separator />
+          <div className="flex items-center gap-3 p-2">
+            <Avatar className="size-9">
+              <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                {client.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{client.name}</p>
+              <p className="text-xs text-muted-foreground">عميل</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {approved.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* In Progress Section */}
-        {inProgress.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="size-5 text-blue-500" />
-              <h2 className="text-lg font-semibold">قيد التحضير ({inProgress.length})</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {inProgress.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty State */}
-        {currentMonthPosts.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <Calendar className="size-16 mb-4 opacity-50" />
-            <p className="text-lg">لا توجد منشورات لهذا الشهر</p>
-            <p className="text-sm">سيتم إضافة المنشورات قريباً</p>
           </div>
-        )}
-      </main>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-background border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Client Avatar - Mobile */}
+              <div className="md:hidden">
+                {client.icon_url || client.logo_url ? (
+                  <img
+                    src={client.icon_url || client.logo_url || ""}
+                    alt={client.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: client.brand_primary_color || "#3B82F6" }}
+                  >
+                    {client.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">{client.name}</h1>
+                <p className="text-sm text-muted-foreground">خطة المحتوى الشهرية</p>
+              </div>
+            </div>
+            
+            {/* Month Navigation */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                <ChevronRight className="size-4" />
+              </Button>
+              <div className="px-4 py-2 bg-muted rounded-lg min-w-[160px] text-center">
+                <span className="font-semibold">
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </span>
+              </div>
+              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                <ChevronLeft className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-auto p-6">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard 
+              icon={FileText} 
+              label="إجمالي المنشورات" 
+              value={stats.total} 
+              color="bg-blue-500"
+            />
+            <StatCard 
+              icon={Clock} 
+              label="بانتظار الموافقة" 
+              value={stats.pending} 
+              color="bg-orange-500"
+              onClick={() => setActiveTab("pending")}
+            />
+            <StatCard 
+              icon={CheckCircle2} 
+              label="تمت الموافقة" 
+              value={stats.approved} 
+              color="bg-green-500"
+              onClick={() => setActiveTab("approved")}
+            />
+            <StatCard 
+              icon={AlertCircle} 
+              label="قيد التحضير" 
+              value={stats.inProgress} 
+              color="bg-purple-500"
+              onClick={() => setActiveTab("progress")}
+            />
+          </div>
+
+          {/* Approval Progress */}
+          {(stats.approved + stats.rejected) > 0 && (
+            <Card className="mb-8">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">نسبة الاعتماد</span>
+                  <span className="text-sm text-muted-foreground">{stats.approvalRate}%</span>
+                </div>
+                <Progress value={stats.approvalRate} className="h-2" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4 h-12">
+              <TabsTrigger value="pending" className="gap-2">
+                <Clock className="size-4" />
+                <span className="hidden sm:inline">بانتظار الموافقة</span>
+                {stats.pending > 0 && (
+                  <Badge variant="secondary" className="mr-1">{stats.pending}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="approved" className="gap-2">
+                <CheckCircle2 className="size-4" />
+                <span className="hidden sm:inline">تمت الموافقة</span>
+              </TabsTrigger>
+              <TabsTrigger value="rejected" className="gap-2">
+                <XCircle className="size-4" />
+                <span className="hidden sm:inline">مرفوض</span>
+              </TabsTrigger>
+              <TabsTrigger value="progress" className="gap-2">
+                <BarChart3 className="size-4" />
+                <span className="hidden sm:inline">قيد التحضير</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Pending Review Tab */}
+            <TabsContent value="pending">
+              {pendingReview.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {pendingReview.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <CheckCheck className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات بانتظار موافقتك</h3>
+                  <p className="text-muted-foreground">عمل رائع! جميع المنشورات تمت مراجعتها</p>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Approved Tab */}
+            <TabsContent value="approved">
+              {approved.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {approved.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <FileText className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات معتمدة</h3>
+                  <p className="text-muted-foreground">المنشورات المعتمدة ستظهر هنا</p>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Rejected Tab */}
+            <TabsContent value="rejected">
+              {rejected.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {rejected.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <ThumbsUp className="size-16 mx-auto mb-4 text-green-500 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات مرفوضة</h3>
+                  <p className="text-muted-foreground">ممتاز! لم يتم رفض أي منشور</p>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* In Progress Tab */}
+            <TabsContent value="progress">
+              {inProgress.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {inProgress.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <Calendar className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد منشورات قيد التحضير</h3>
+                  <p className="text-muted-foreground">المنشورات قيد الإعداد ستظهر هنا</p>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          {/* Empty State for whole month */}
+          {currentMonthPosts.length === 0 && (
+            <Card className="p-16 text-center mt-8">
+              <Calendar className="size-20 mx-auto mb-6 text-primary opacity-30" />
+              <h3 className="text-2xl font-bold mb-3">لا توجد منشورات لهذا الشهر</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                سيتم إضافة المنشورات قريباً من قبل فريق التسويق. 
+                يمكنك التنقل بين الأشهر لعرض المنشورات السابقة أو القادمة.
+              </p>
+            </Card>
+          )}
+        </main>
+      </div>
 
       {/* Post Detail Side Panel */}
       {selectedPost && (
