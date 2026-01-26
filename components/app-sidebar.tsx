@@ -373,9 +373,11 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                  <Settings className="ml-2 size-4" />
-                  الإعدادات
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">
+                    <Settings className="ml-2 size-4" />
+                    الملف الشخصي
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>

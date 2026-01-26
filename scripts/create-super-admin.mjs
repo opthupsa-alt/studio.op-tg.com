@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 })
 
 async function createSuperAdmin() {
-  const email = 'admin@op-taget.com'
+  const email = 'admin@op-target.com'
   const password = '@opTarget20#30'
   
   console.log('🔐 Creating Super Admin...')
@@ -112,7 +112,7 @@ async function createTeamMember(userId, email) {
 createSuperAdmin()
   .then(() => {
     console.log('\n🎉 Super Admin setup complete!')
-    console.log('📧 Email: admin@op-taget.com')
+    console.log('📧 Email: admin@op-target.com')
     console.log('🔑 Password: @opTarget20#30')
     console.log('\n⚠️ This account is protected from deletion')
     process.exit(0)
