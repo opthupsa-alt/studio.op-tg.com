@@ -382,6 +382,7 @@ export function DashboardContent({
         onFilterToggle={() => setIsFilterOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        selectedClient={filters.clients.length === 1 ? clients.find(c => c.id === filters.clients[0]) : null}
       />
 
       <main className="flex-1 overflow-auto">

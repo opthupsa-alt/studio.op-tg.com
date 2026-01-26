@@ -330,10 +330,17 @@ export function PostSidePanel({
                     className="hidden"
                     accept="image/*,video/*,.pdf"
                     multiple
-                    disabled={isNew || isUploadingFile}
+                    disabled={isUploadingFile}
                     onChange={async (e) => {
                       const files = e.target.files
-                      if (!files || !post?.id) return
+                      if (!files) return
+                      
+                      // If new post, save first then upload
+                      if (isNew || !post?.id) {
+                        alert("يرجى حفظ المنشور أولاً ثم رفع الملفات")
+                        e.target.value = ""
+                        return
+                      }
                       
                       setIsUploadingFile(true)
                       try {
@@ -358,9 +365,9 @@ export function PostSidePanel({
                     htmlFor="file-upload"
                     className={cn(
                       "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer block",
-                      isNew || isUploadingFile 
+                      isUploadingFile 
                         ? "opacity-50 cursor-not-allowed" 
-                        : "hover:border-primary"
+                        : "hover:border-primary hover:bg-accent/50"
                     )}
                   >
                     {isUploadingFile ? (
@@ -372,7 +379,7 @@ export function PostSidePanel({
                       <>
                         <Plus className="size-8 mx-auto text-muted-foreground mb-2" />
                         <p className="text-sm text-muted-foreground">
-                          {isNew ? "احفظ المنشور أولاً لرفع الملفات" : "اسحب الملفات هنا أو انقر للاختيار"}
+                          {isNew ? "احفظ المنشور أولاً ثم ارفع الملفات" : "اسحب الملفات هنا أو انقر للاختيار"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           PNG, JPG, GIF, MP4 حتى 50MB
