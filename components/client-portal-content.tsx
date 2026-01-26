@@ -321,99 +321,7 @@ export function ClientPortalContent({
   )
 
   return (
-    <div className="flex h-screen bg-muted/30">
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col bg-background border-l">
-        {/* Logo & Client */}
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-3 mb-4">
-            <img 
-              src="/opt-logo.png" 
-              alt="الهدف الأمثل" 
-              className="w-10 h-10 object-contain"
-            />
-            <div>
-              <p className="font-bold text-sm">الهدف الأمثل</p>
-              <p className="text-xs text-muted-foreground">للتسويق</p>
-            </div>
-          </div>
-          <Separator />
-          <div className="mt-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">بوابة العميل</p>
-          </div>
-        </div>
-
-        {/* Navigation - Available Months */}
-        <nav className="flex-1 p-4 overflow-auto">
-          <p className="text-xs font-medium text-muted-foreground mb-3 px-2">الأشهر المتاحة</p>
-          {availableMonths.length > 0 ? (
-            <ul className="space-y-1">
-              {availableMonths.map((m) => {
-                const isSelected = currentDate.getFullYear() === m.year && currentDate.getMonth() === m.month
-                return (
-                  <li key={`${m.year}-${m.month}`}>
-                    <Button 
-                      variant="ghost" 
-                      className={cn(
-                        "w-full justify-between gap-2 h-auto py-2.5",
-                        isSelected && "bg-primary/10 text-primary"
-                      )}
-                      onClick={() => handleMonthSelect(m.year, m.month)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Calendar className="size-4" />
-                        <span>{monthNames[m.month]} {m.year}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                          {m.count}
-                        </Badge>
-                        {m.pending > 0 && (
-                          <Badge className="bg-orange-500 text-white text-xs h-5 px-1.5">
-                            {m.pending}
-                          </Badge>
-                        )}
-                      </div>
-                    </Button>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              لا توجد منشورات
-            </p>
-          )}
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t space-y-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            الوضع الداكن
-          </Button>
-          <Separator />
-          <div className="flex items-center gap-3 p-2">
-            <Avatar className="size-9">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                {client.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{client.name}</p>
-              <p className="text-xs text-muted-foreground">عميل</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header className="bg-background border-b px-6 py-4">
           <div className="flex items-center justify-between">
@@ -609,7 +517,6 @@ export function ClientPortalContent({
             </Card>
           )}
         </main>
-      </div>
 
       {/* Post Detail Side Panel */}
       {selectedPost && (
