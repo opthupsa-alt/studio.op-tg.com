@@ -11,7 +11,12 @@ import {
   Trash2, 
   FileText,
   ChevronRight,
-  Building2
+  Building2,
+  Share2,
+  Copy,
+  Check,
+  Lock,
+  Globe
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -30,11 +35,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -58,6 +67,35 @@ const monthNames = [
 
 export function PlansContent({ clients, plans }: PlansContentProps) {
   const router = useRouter()
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [selectedPlanForShare, setSelectedPlanForShare] = useState<{ plan: Plan; client: Client } | null>(null)
+  const [usePassword, setUsePassword] = useState(false)
+  const [sharePassword, setSharePassword] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  const getShareUrl = () => {
+    if (!selectedPlanForShare) return ""
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    let url = `${baseUrl}/share/${selectedPlanForShare.client.id}/${selectedPlanForShare.plan.year}/${selectedPlanForShare.plan.month}`
+    if (usePassword && sharePassword) {
+      url += `?password=${encodeURIComponent(sharePassword)}`
+    }
+    return url
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(getShareUrl())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const openShareDialog = (plan: Plan, client: Client) => {
+    setSelectedPlanForShare({ plan, client })
+    setUsePassword(false)
+    setSharePassword("")
+    setCopied(false)
+    setShareDialogOpen(true)
+  }
 
   // Group plans by client
   const plansByClient = clients.map(client => ({
@@ -182,6 +220,10 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
                                   عرض التقويم
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openShareDialog(plan, client)}>
+                                <Share2 className="ml-2 size-4" />
+                                مشاركة الخطة
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 className="text-destructive"
@@ -221,6 +263,98 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
           </div>
         )}
       </main>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="size-5" />
+              مشاركة الخطة
+            </DialogTitle>
+            <DialogDescription>
+              {selectedPlanForShare && (
+                <>
+                  شارك خطة {monthNames[selectedPlanForShare.plan.month - 1]} {selectedPlanForShare.plan.year} 
+                  لـ {selectedPlanForShare.client.name}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {/* Password Option */}
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div className="flex items-center gap-3">
+                {usePassword ? (
+                  <Lock className="size-5 text-amber-500" />
+                ) : (
+                  <Globe className="size-5 text-green-500" />
+                )}
+                <div>
+                  <Label className="font-medium">
+                    {usePassword ? "محمية بكلمة مرور" : "عامة"}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {usePassword ? "يحتاج المشاهد لكلمة مرور" : "يمكن لأي شخص لديه الرابط المشاهدة"}
+                  </p>
+                </div>
+              </div>
+              <Switch checked={usePassword} onCheckedChange={setUsePassword} />
+            </div>
+
+            {/* Password Input */}
+            {usePassword && (
+              <div className="space-y-2">
+                <Label htmlFor="share-password">كلمة المرور</Label>
+                <Input
+                  id="share-password"
+                  type="text"
+                  placeholder="أدخل كلمة المرور..."
+                  value={sharePassword}
+                  onChange={(e) => setSharePassword(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Share Link */}
+            <div className="space-y-2">
+              <Label>رابط المشاركة</Label>
+              <div className="flex items-center gap-2">
+                <Input 
+                  value={getShareUrl()} 
+                  readOnly 
+                  className="flex-1 text-sm bg-muted"
+                />
+                <Button size="sm" onClick={handleCopyLink} className="shrink-0">
+                  {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShareDialogOpen(false)}
+              >
+                إغلاق
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  handleCopyLink()
+                  setTimeout(() => setShareDialogOpen(false), 1000)
+                }}
+              >
+                <Copy className="size-4 ml-2" />
+                نسخ الرابط
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { PublicGridView } from "@/components/public-grid-view"
+import { SharePasswordForm } from "@/components/share-password-form"
 
 interface SharePageProps {
   params: Promise<{
@@ -60,9 +61,14 @@ async function getShareData(clientId: string, year: number, month: number) {
   return { client, posts: transformedPosts, plan }
 }
 
+const monthNames = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+]
+
 export default async function SharePage({ params, searchParams }: SharePageProps) {
   const { clientId, year, month } = await params
-  const { password } = await searchParams
+  const { password: urlPassword } = await searchParams
 
   const yearNum = parseInt(year)
   const monthNum = parseInt(month)
@@ -78,13 +84,11 @@ export default async function SharePage({ params, searchParams }: SharePageProps
   }
 
   const { client, posts, plan } = data
-
-  // Get month name in Arabic
-  const monthNames = [
-    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-  ]
   const monthName = monthNames[monthNum - 1]
+
+  // Check if password is required (passed in URL means it's protected)
+  const requiredPassword = urlPassword
+  const isPasswordProtected = !!requiredPassword
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,7 +114,13 @@ export default async function SharePage({ params, searchParams }: SharePageProps
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8">
-        {posts.length === 0 ? (
+        {isPasswordProtected ? (
+          <SharePasswordForm 
+            correctPassword={requiredPassword}
+            posts={posts}
+            clientColor={client.brand_primary_color}
+          />
+        ) : posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <p className="text-lg">لا توجد منشورات لهذا الشهر</p>
           </div>
