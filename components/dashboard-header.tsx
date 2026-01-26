@@ -71,25 +71,22 @@ export function DashboardHeader({
     <header className="sticky top-0 z-10 flex flex-wrap h-auto min-h-14 shrink-0 items-center gap-2 border-b bg-background px-2 sm:px-4 py-2">
       <SidebarTrigger className="-mr-1" />
       <Separator orientation="vertical" className="ml-2 h-4 hidden sm:block" />
-      <Breadcrumb className="hidden xs:block">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage className="font-semibold text-sm sm:text-lg">
-              {format(currentDate, "MMMM yyyy", { locale: ar })}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      {/* Month/Year Display - Always visible */}
+      <div className="font-semibold text-sm sm:text-lg text-primary">
+        {format(currentDate, "MMMM yyyy", { locale: ar })}
+      </div>
 
       <div className="flex items-center gap-1 mr-2 sm:mr-4">
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth}>
-          <ChevronRight className="size-4" />
+        {/* RTL: السهم الأيسر للشهر التالي (لأن التالي في RTL يكون على اليسار) */}
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth} title="الشهر التالي">
+          <ChevronLeft className="size-4" />
         </Button>
         <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3" onClick={onToday}>
           اليوم
         </Button>
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth}>
-          <ChevronLeft className="size-4" />
+        {/* RTL: السهم الأيمن للشهر السابق (لأن السابق في RTL يكون على اليمين) */}
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth} title="الشهر السابق">
+          <ChevronRight className="size-4" />
         </Button>
       </div>
 
