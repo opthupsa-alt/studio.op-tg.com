@@ -97,32 +97,30 @@ export function ClientPortalContent({
   const [feedback, setFeedback] = useState("")
   const [newComment, setNewComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeTab, setActiveTab] = useState("pending")
+  const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
   
-  // Find the month with pending reviews first, or current month
+  // Debug: Log posts on mount
+  console.log("Client Portal - Total posts received:", posts.length)
+  console.log("Client Portal - Posts:", posts.map(p => ({ id: p.id, title: p.title, status: p.status, date: p.publish_date })))
+  
+  // Find the first month that has posts, prioritizing pending reviews
   const getInitialMonth = () => {
+    if (posts.length === 0) {
+      return new Date(currentYear, currentMonth - 1)
+    }
+    
     // First check if there are pending posts
     const pendingPost = posts.find(p => p.status === "client_review")
     if (pendingPost) {
       const date = parseLocalDate(pendingPost.publish_date)
       return new Date(date.getFullYear(), date.getMonth())
     }
-    // Otherwise use current month if it has posts
-    const currentHasPosts = posts.some(p => {
-      const d = parseLocalDate(p.publish_date)
-      return d.getFullYear() === currentYear && d.getMonth() === currentMonth - 1
-    })
-    if (currentHasPosts) {
-      return new Date(currentYear, currentMonth - 1)
-    }
-    // Otherwise use the first available month with posts
-    if (posts.length > 0) {
-      const firstPost = posts[0]
-      const date = parseLocalDate(firstPost.publish_date)
-      return new Date(date.getFullYear(), date.getMonth())
-    }
-    return new Date(currentYear, currentMonth - 1)
+    
+    // Otherwise use the first post's month
+    const firstPost = posts[0]
+    const date = parseLocalDate(firstPost.publish_date)
+    return new Date(date.getFullYear(), date.getMonth())
   }
   
   const [currentDate, setCurrentDate] = useState(getInitialMonth)
@@ -478,17 +476,22 @@ export function ClientPortalContent({
           {/* View Mode: Tabs */}
           {viewMode === "tabs" && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 h-12">
+              <TabsList className="grid w-full grid-cols-5 h-12">
+                <TabsTrigger value="all" className="gap-2">
+                  <FileText className="size-4" />
+                  <span className="hidden sm:inline">الكل</span>
+                  <Badge variant="secondary" className="mr-1">{stats.total}</Badge>
+                </TabsTrigger>
                 <TabsTrigger value="pending" className="gap-2">
                   <Clock className="size-4" />
                   <span className="hidden sm:inline">بانتظار الموافقة</span>
                   {stats.pending > 0 && (
-                    <Badge variant="secondary" className="mr-1">{stats.pending}</Badge>
+                    <Badge className="bg-orange-500 text-white mr-1">{stats.pending}</Badge>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="approved" className="gap-2">
                   <CheckCircle2 className="size-4" />
-                  <span className="hidden sm:inline">تمت الموافقة</span>
+                  <span className="hidden sm:inline">معتمد</span>
                 </TabsTrigger>
                 <TabsTrigger value="rejected" className="gap-2">
                   <XCircle className="size-4" />
@@ -499,6 +502,23 @@ export function ClientPortalContent({
                   <span className="hidden sm:inline">قيد التحضير</span>
                 </TabsTrigger>
               </TabsList>
+
+              {/* All Posts Tab */}
+              <TabsContent value="all">
+                {currentMonthPosts.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {currentMonthPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="p-12 text-center">
+                    <Calendar className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">لا توجد منشورات لهذا الشهر</h3>
+                    <p className="text-muted-foreground">اختر شهراً آخر من القائمة الجانبية</p>
+                  </Card>
+                )}
+              </TabsContent>
 
               {/* Pending Review Tab */}
               <TabsContent value="pending">
