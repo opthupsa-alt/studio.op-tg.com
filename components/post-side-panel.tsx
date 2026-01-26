@@ -129,21 +129,25 @@ export function PostSidePanel({
 
   useEffect(() => {
     if (post) {
-      setTitle(post.title)
+      setTitle(post.title || "")
+      setMainContent(post.description || "")
       setMainGoal(post.main_goal || "")
       setPostType(post.post_type || "post")
       setStatus(post.status)
       setScheduledDate(post.publish_date ? new Date(post.publish_date) : undefined)
+      setScheduledTime("")
       setSelectedPlatforms(post.platforms?.map((p) => p.id) || [])
       setVariants(post.variants || [])
       setNewComment("")
-    } else if (isNew) {
-      // Reset for new post
+    } else if (isNew && isOpen) {
+      // Reset ALL fields for new post
       setTitle("")
+      setMainContent("")
       setMainGoal("")
       setPostType("post")
       setStatus("idea")
       setScheduledDate(defaultDate)
+      setScheduledTime("")
       setSelectedPlatforms([])
       setVariants([])
       setNewComment("")
