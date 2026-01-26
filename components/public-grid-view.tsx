@@ -1,10 +1,12 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { parseLocalDate } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { ImageIcon, Video, Film, Camera, Layers, Clock } from "lucide-react"
+import { ImageIcon, Video, Film, Camera, Layers, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { PlatformIcon } from "@/components/platform-icon"
 import { cn } from "@/lib/utils"
@@ -37,9 +39,47 @@ const statusConfig: Record<PostStatus, { label: string; className: string }> = {
 }
 
 export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
+
+  const sortedPosts = useMemo(() => {
+    return [...posts].sort((a, b) => {
+      const dateA = new Date(a.publish_date).getTime()
+      const dateB = new Date(b.publish_date).getTime()
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB
+    })
+  }, [posts, sortOrder])
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === "newest" ? "oldest" : "newest")
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {posts.map((post) => {
+    <div className="space-y-4">
+      {/* Sort Controls */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleSort}
+          className="gap-2"
+        >
+          {sortOrder === "newest" ? (
+            <>
+              <ArrowDown className="size-4" />
+              الأحدث أولاً
+            </>
+          ) : (
+            <>
+              <ArrowUp className="size-4" />
+              الأقدم أولاً
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Grid - RTL direction */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" dir="rtl">
+        {sortedPosts.map((post) => {
         const postType = postTypeConfig[post.post_type || "post"]
         const PostTypeIcon = postType.icon
         const status = statusConfig[post.status]
@@ -120,6 +160,7 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
           </Card>
         )
       })}
+      </div>
     </div>
   )
 }
