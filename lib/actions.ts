@@ -21,6 +21,7 @@ export async function createPost(data: {
   client_id: string
   title: string
   main_goal?: string
+  post_type?: string
   status: PostStatus
   publish_date: string
   platform_ids?: string[]
@@ -35,6 +36,7 @@ export async function createPost(data: {
       client_id: data.client_id,
       title: data.title,
       main_goal: data.main_goal,
+      post_type: data.post_type || "post",
       status: data.status,
       publish_date: data.publish_date,
     })

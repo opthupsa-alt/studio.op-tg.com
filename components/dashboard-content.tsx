@@ -201,6 +201,7 @@ export function DashboardContent({
         client_id: activePlan.client_id,
         title: data.title || "منشور جديد",
         main_goal: data.main_goal || undefined,
+        post_type: data.post_type || "post",
         status: data.status || "draft",
         publish_date: data.publish_date || format(postDate, "yyyy-MM-dd"),
       })
