@@ -1,15 +1,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Target, AlertTriangle } from 'lucide-react'
+import Image from 'next/image'
+import { AlertTriangle } from 'lucide-react'
 
 export default function AuthErrorPage() {
   return (
     <div className="min-h-svh flex flex-col items-center justify-center p-6 bg-gradient-to-br from-background via-background to-destructive/5">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-4">
-            <Target className="size-8" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden mb-4">
+            <Image 
+              src="/opt-logo.png" 
+              alt="الهدف الأمثل للتسويق" 
+              width={80} 
+              height={80}
+              className="object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-center">الهدف الأمثل للتسويق</h1>
           <p className="text-muted-foreground text-center mt-1">منصة تخطيط المحتوى</p>

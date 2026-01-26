@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Calendar,
   LayoutGrid,
@@ -12,7 +13,6 @@ import {
   Building2,
   Settings,
   LogOut,
-  Target,
   Plus,
   Moon,
   Sun,
@@ -160,8 +160,14 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Target className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
+                  <Image 
+                    src="/opt-logo.png" 
+                    alt="الهدف الأمثل للتسويق" 
+                    width={32} 
+                    height={32}
+                    className="object-contain"
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-bold text-sm">الهدف الأمثل</span>

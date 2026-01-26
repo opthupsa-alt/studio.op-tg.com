@@ -14,9 +14,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Target, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -49,8 +50,15 @@ export default function LoginPage() {
     <div className="min-h-svh flex flex-col items-center justify-center p-6 bg-gradient-to-br from-background via-background to-primary/5">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-4">
-            <Target className="size-8" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden mb-4">
+            <Image 
+              src="/opt-logo.png" 
+              alt="الهدف الأمثل للتسويق" 
+              width={80} 
+              height={80}
+              className="object-contain"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-bold text-center">الهدف الأمثل للتسويق</h1>
           <p className="text-muted-foreground text-center mt-1">منصة تخطيط المحتوى</p>
