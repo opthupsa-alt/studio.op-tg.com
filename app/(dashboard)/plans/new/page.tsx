@@ -88,15 +88,14 @@ export default function NewPlanPage() {
       const supabase = createClient()
       
       // Check if plan already exists
-      const { data: existingPlan } = await supabase
+      const { data: existingPlans } = await supabase
         .from('plans')
         .select('id')
         .eq('client_id', selectedClient)
         .eq('month', parseInt(selectedMonth))
         .eq('year', parseInt(selectedYear))
-        .single()
       
-      if (existingPlan) {
+      if (existingPlans && existingPlans.length > 0) {
         alert('هذه الخطة موجودة بالفعل')
         setIsLoading(false)
         return
