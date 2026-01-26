@@ -64,10 +64,11 @@ export function DashboardContent({
     setLocalPosts(initialPosts)
   }, [initialPosts])
 
-  // قراءة الشهر والسنة من URL وتحديث التقويم
+  // قراءة الشهر والسنة والعميل من URL وتحديث التقويم والفلاتر
   useEffect(() => {
     const yearParam = searchParams.get('year')
     const monthParam = searchParams.get('month')
+    const clientParam = searchParams.get('client')
     
     if (yearParam && monthParam) {
       const year = parseInt(yearParam)
@@ -75,6 +76,14 @@ export function DashboardContent({
       if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
         setCurrentDate(new Date(year, month, 1))
       }
+    }
+    
+    // تطبيق فلتر العميل إذا كان موجوداً في URL
+    if (clientParam) {
+      setFilters(prev => ({
+        ...prev,
+        clients: [clientParam]
+      }))
     }
   }, [searchParams])
 
