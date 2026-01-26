@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createPublicClient } from "@/lib/supabase/server"
 import { PublicGridView } from "@/components/public-grid-view"
 import { SharePasswordForm } from "@/components/share-password-form"
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface SharePageProps {
   params: Promise<{
@@ -15,7 +19,7 @@ interface SharePageProps {
 }
 
 async function getShareData(clientId: string, year: number, month: number) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   // Get client
   const { data: client, error: clientError } = await supabase
