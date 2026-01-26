@@ -62,7 +62,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
-import { deletePlan } from "@/lib/actions"
+import { deletePlan, createShareLink } from "@/lib/actions"
 import type { Client, Plan } from "@/lib/types"
 
 interface PlansContentProps {
@@ -85,18 +85,44 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isActivatingShare, setIsActivatingShare] = useState(false)
+  const [shareActivated, setShareActivated] = useState(false)
 
   const getShareUrl = () => {
     if (!selectedPlanForShare) return ""
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-    let url = `${baseUrl}/share/${selectedPlanForShare.client.id}/${selectedPlanForShare.plan.year}/${selectedPlanForShare.plan.month}`
-    if (usePassword && sharePassword) {
-      url += `?password=${encodeURIComponent(sharePassword)}`
-    }
-    return url
+    return `${baseUrl}/share/${selectedPlanForShare.client.id}/${selectedPlanForShare.plan.year}/${selectedPlanForShare.plan.month}`
   }
 
-  const handleCopyLink = () => {
+  const handleActivateShare = async () => {
+    if (!selectedPlanForShare) return
+    
+    setIsActivatingShare(true)
+    try {
+      const result = await createShareLink({
+        clientId: selectedPlanForShare.client.id,
+        year: selectedPlanForShare.plan.year,
+        month: selectedPlanForShare.plan.month,
+        password: usePassword ? sharePassword : undefined,
+      })
+      
+      if (result.error) {
+        alert(result.error)
+      } else {
+        setShareActivated(true)
+      }
+    } catch (error) {
+      console.error("Error activating share:", error)
+      alert("حدث خطأ أثناء تفعيل المشاركة")
+    } finally {
+      setIsActivatingShare(false)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!shareActivated) {
+      await handleActivateShare()
+    }
     navigator.clipboard.writeText(getShareUrl())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -107,6 +133,7 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
     setUsePassword(false)
     setSharePassword("")
     setCopied(false)
+    setShareActivated(false)
     setShareDialogOpen(true)
   }
 

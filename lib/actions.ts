@@ -1328,7 +1328,13 @@ export async function updateTeamMemberClients(teamMemberId: string, clientIds: s
 // Share Links
 // =====================================================
 
-export async function createShareLink(clientId: string, year: number, month: number, expiresInDays?: number) {
+export async function createShareLink(data: {
+  clientId: string
+  year: number
+  month: number
+  password?: string
+  expiresInDays?: number
+}) {
   const supabase = await createClient()
 
   // Check if current user is admin/manager
@@ -1345,13 +1351,27 @@ export async function createShareLink(clientId: string, year: number, month: num
     return { error: "Only admins and managers can create share links" }
   }
 
-  const { data, error } = await supabase
-    .rpc('create_or_get_share_link', {
-      p_client_id: clientId,
-      p_year: year,
-      p_month: month,
-      p_expires_in_days: expiresInDays || null
+  // Calculate expiration date if provided
+  const expiresAt = data.expiresInDays 
+    ? new Date(Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+    : null
+
+  // Upsert share link (create or update)
+  const { data: shareLink, error } = await supabase
+    .from("share_links")
+    .upsert({
+      client_id: data.clientId,
+      year: data.year,
+      month: data.month,
+      password: data.password || null,
+      is_active: true,
+      expires_at: expiresAt,
+      created_by: user.id,
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'client_id,year,month'
     })
+    .select()
     .single()
 
   if (error) {
@@ -1359,7 +1379,7 @@ export async function createShareLink(clientId: string, year: number, month: num
     return { error: error.message }
   }
 
-  return { data }
+  return { data: shareLink }
 }
 
 export async function getShareLink(clientId: string, year: number, month: number) {
