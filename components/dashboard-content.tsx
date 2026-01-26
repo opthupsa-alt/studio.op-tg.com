@@ -173,7 +173,9 @@ export function DashboardContent({
   const handleNewPost = () => {
     setSelectedPost(null)
     setIsNewPost(true)
-    setNewPostDate(undefined)
+    // Set default date to first day of current month/year from navbar
+    const defaultDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+    setNewPostDate(defaultDate)
     setIsPanelOpen(true)
   }
 
@@ -200,9 +202,10 @@ export function DashboardContent({
   const handleSavePost = async (data: Partial<Post>) => {
     if (isNewPost) {
       // Find the correct plan for the selected date and client
-      const postDate = newPostDate || new Date()
-      const postYear = postDate.getFullYear()
-      const postMonth = postDate.getMonth() + 1
+      // Use newPostDate if set, otherwise use first day of currentDate month
+      const postDate = newPostDate || new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+      const postYear = currentDate.getFullYear()
+      const postMonth = currentDate.getMonth() + 1
       
       // Find plan for this month/year, or use first available plan
       // Use client filter if only one client is selected
