@@ -163,7 +163,7 @@ export function PostSidePanel({
         main_goal: mainGoal as Post["main_goal"],
         post_type: postType as Post["post_type"],
         status,
-        publish_date: publishDate?.toISOString().split("T")[0],
+        publish_date: publishDate ? format(publishDate, "yyyy-MM-dd") : undefined,
       })
 
     // Save variants if post exists and has variants
