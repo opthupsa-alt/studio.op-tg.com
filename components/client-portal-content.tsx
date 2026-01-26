@@ -98,6 +98,35 @@ export function ClientPortalContent({
   const [activeTab, setActiveTab] = useState("pending")
   const [currentDate, setCurrentDate] = useState(new Date(currentYear, currentMonth - 1))
 
+  // Get available months that have posts
+  const availableMonths = useMemo(() => {
+    const monthsSet = new Map<string, { year: number; month: number; count: number; pending: number }>()
+    
+    posts.forEach((post) => {
+      const postDate = parseLocalDate(post.publish_date)
+      const key = `${postDate.getFullYear()}-${postDate.getMonth()}`
+      const existing = monthsSet.get(key)
+      
+      if (existing) {
+        existing.count++
+        if (post.status === "client_review") existing.pending++
+      } else {
+        monthsSet.set(key, {
+          year: postDate.getFullYear(),
+          month: postDate.getMonth(),
+          count: 1,
+          pending: post.status === "client_review" ? 1 : 0
+        })
+      }
+    })
+    
+    // Sort by date (newest first)
+    return Array.from(monthsSet.values()).sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year
+      return b.month - a.month
+    })
+  }, [posts])
+
   // Filter posts for selected month
   const currentMonthPosts = useMemo(() => {
     return posts.filter((post) => {
@@ -124,6 +153,11 @@ export function ClientPortalContent({
       ? Math.round((approved.length / (approved.length + rejected.length || 1)) * 100) 
       : 0
   }), [currentMonthPosts, pendingReview, approved, rejected, inProgress])
+
+  // Navigate to specific month
+  const handleMonthSelect = (year: number, month: number) => {
+    setCurrentDate(new Date(year, month))
+  }
 
   // Get post image
   const getPostImage = (post: Post): string => {
@@ -309,19 +343,47 @@ export function ClientPortalContent({
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            <li>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 bg-primary/10 text-primary"
-              >
-                <Home className="size-5" />
-                المنشورات
-              </Button>
-            </li>
-          </ul>
+        {/* Navigation - Available Months */}
+        <nav className="flex-1 p-4 overflow-auto">
+          <p className="text-xs font-medium text-muted-foreground mb-3 px-2">الأشهر المتاحة</p>
+          {availableMonths.length > 0 ? (
+            <ul className="space-y-1">
+              {availableMonths.map((m) => {
+                const isSelected = currentDate.getFullYear() === m.year && currentDate.getMonth() === m.month
+                return (
+                  <li key={`${m.year}-${m.month}`}>
+                    <Button 
+                      variant="ghost" 
+                      className={cn(
+                        "w-full justify-between gap-2 h-auto py-2.5",
+                        isSelected && "bg-primary/10 text-primary"
+                      )}
+                      onClick={() => handleMonthSelect(m.year, m.month)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar className="size-4" />
+                        <span>{monthNames[m.month]} {m.year}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="secondary" className="text-xs h-5 px-1.5">
+                          {m.count}
+                        </Badge>
+                        {m.pending > 0 && (
+                          <Badge className="bg-orange-500 text-white text-xs h-5 px-1.5">
+                            {m.pending}
+                          </Badge>
+                        )}
+                      </div>
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              لا توجد منشورات
+            </p>
+          )}
         </nav>
 
         {/* Footer */}
