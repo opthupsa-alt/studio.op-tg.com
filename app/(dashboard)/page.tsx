@@ -31,6 +31,10 @@ export default async function DashboardPage() {
   const now = new Date()
   const currentMonth = now.getMonth() + 1
   const currentYear = now.getFullYear()
+  
+  // Get today's date at midnight for accurate date comparison
+  const today = new Date(currentYear, now.getMonth(), now.getDate())
+  today.setHours(0, 0, 0, 0)
 
   // Get all posts (filtered by role access)
   let postsQuery = supabase.from("posts").select("*, plan:plans(*)", { count: "exact" })
@@ -71,19 +75,20 @@ export default async function DashboardPage() {
   }) || []
 
   // Get upcoming posts (next 7 days)
-  const nextWeek = new Date()
+  const nextWeek = new Date(today)
   nextWeek.setDate(nextWeek.getDate() + 7)
   const upcomingPosts = posts?.filter((post) => {
     if (!post.publish_date) return false
-    const postDate = new Date(post.publish_date)
-    return postDate >= now && postDate <= nextWeek
+    const postDate = new Date(post.publish_date + "T00:00:00")
+    return postDate >= today && postDate <= nextWeek
   }) || []
 
   // Get overdue posts (past date but not posted)
+  // A post is overdue if its publish_date is BEFORE today (not including today)
   const overduePosts = posts?.filter((post) => {
     if (!post.publish_date) return false
-    const postDate = new Date(post.publish_date)
-    return postDate < now && !["posted", "approved", "scheduled"].includes(post.status)
+    const postDate = new Date(post.publish_date + "T00:00:00")
+    return postDate < today && !["posted", "approved", "scheduled"].includes(post.status)
   }) || []
 
   // Get clients count (for admin/manager)
