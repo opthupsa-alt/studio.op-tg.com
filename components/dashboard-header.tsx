@@ -77,16 +77,16 @@ export function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-1 mr-2 sm:mr-4">
-        {/* RTL: السهم الأيسر للشهر التالي (لأن التالي في RTL يكون على اليسار) */}
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth} title="الشهر التالي">
-          <ChevronLeft className="size-4" />
+        {/* السهم الأيمن للشهر السابق */}
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth} title="الشهر السابق">
+          <ChevronRight className="size-4" />
         </Button>
         <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3" onClick={onToday}>
           اليوم
         </Button>
-        {/* RTL: السهم الأيمن للشهر السابق (لأن السابق في RTL يكون على اليمين) */}
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth} title="الشهر السابق">
-          <ChevronRight className="size-4" />
+        {/* السهم الأيسر للشهر التالي */}
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth} title="الشهر التالي">
+          <ChevronLeft className="size-4" />
         </Button>
       </div>
 
