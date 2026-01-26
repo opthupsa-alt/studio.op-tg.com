@@ -772,6 +772,8 @@ export async function updateClientRecord(
     brand_primary_color?: string
     timezone?: string
     status?: "active" | "inactive"
+    logo_url?: string | null
+    icon_url?: string | null
   }
 ) {
   const supabase = await createClient()

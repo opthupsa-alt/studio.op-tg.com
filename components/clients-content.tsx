@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Building2, MoreHorizontal, Edit, Trash2, Globe, Users, UserPlus, Eye, EyeOff } from "lucide-react"
+import { Plus, Building2, MoreHorizontal, Edit, Trash2, Globe, Users, UserPlus, Eye, EyeOff, Upload, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -60,6 +60,10 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
   const [editClientName, setEditClientName] = useState("")
   const [editClientColor, setEditClientColor] = useState("")
   const [editClientStatus, setEditClientStatus] = useState<"active" | "inactive">("active")
+  const [editClientLogo, setEditClientLogo] = useState<string | null>(null)
+  const [editClientIcon, setEditClientIcon] = useState<string | null>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false)
   
   // Client User state
   const [isClientUserDialogOpen, setIsClientUserDialogOpen] = useState(false)
@@ -74,7 +78,49 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
     setEditClientName(client.name)
     setEditClientColor(client.brand_primary_color || "#3B82F6")
     setEditClientStatus(client.status)
+    setEditClientLogo(client.logo_url || null)
+    setEditClientIcon(client.icon_url || null)
     setIsEditDialogOpen(true)
+  }
+
+  const handleUploadImage = async (file: File, type: 'logo' | 'icon') => {
+    if (!editingClient) return
+    
+    const setUploading = type === 'logo' ? setIsUploadingLogo : setIsUploadingIcon
+    const setUrl = type === 'logo' ? setEditClientLogo : setEditClientIcon
+    
+    setUploading(true)
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${editingClient.id}/${type}-${Date.now()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('client-assets')
+        .upload(fileName, file, { upsert: true })
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        alert('خطأ في رفع الملف: ' + uploadError.message)
+        return
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('client-assets')
+        .getPublicUrl(fileName)
+      
+      setUrl(publicUrl)
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('خطأ في رفع الملف')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleAddClientUser = (client: Client) => {
@@ -128,6 +174,8 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
         name: editClientName,
         brand_primary_color: editClientColor,
         status: editClientStatus,
+        logo_url: editClientLogo,
+        icon_url: editClientIcon,
       })
       
       if (result.error) {
@@ -477,6 +525,100 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
                   />
                   <span>غير نشط</span>
                 </label>
+              </div>
+            </div>
+            
+            {/* Logo Upload */}
+            <div className="space-y-2">
+              <Label>شعار العميل (Logo)</Label>
+              <div className="flex items-center gap-3">
+                {editClientLogo ? (
+                  <img src={editClientLogo} alt="Logo" className="w-16 h-16 object-contain rounded border" />
+                ) : (
+                  <div className="w-16 h-16 rounded border border-dashed flex items-center justify-center bg-muted">
+                    <ImageIcon className="size-6 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="logo-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUploadImage(file, 'logo')
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                    disabled={isUploadingLogo}
+                  >
+                    <Upload className="size-4 ml-2" />
+                    {isUploadingLogo ? 'جاري الرفع...' : 'رفع شعار'}
+                  </Button>
+                  {editClientLogo && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2 text-destructive"
+                      onClick={() => setEditClientLogo(null)}
+                    >
+                      حذف
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Icon Upload */}
+            <div className="space-y-2">
+              <Label>أيقونة العميل (Icon)</Label>
+              <div className="flex items-center gap-3">
+                {editClientIcon ? (
+                  <img src={editClientIcon} alt="Icon" className="w-12 h-12 object-contain rounded-full border" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border border-dashed flex items-center justify-center bg-muted">
+                    <ImageIcon className="size-4 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="icon-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUploadImage(file, 'icon')
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('icon-upload')?.click()}
+                    disabled={isUploadingIcon}
+                  >
+                    <Upload className="size-4 ml-2" />
+                    {isUploadingIcon ? 'جاري الرفع...' : 'رفع أيقونة'}
+                  </Button>
+                  {editClientIcon && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2 text-destructive"
+                      onClick={() => setEditClientIcon(null)}
+                    >
+                      حذف
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

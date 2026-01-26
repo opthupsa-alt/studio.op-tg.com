@@ -26,6 +26,8 @@ export type Client = {
   name: string
   status: "active" | "inactive"
   brand_primary_color: string | null
+  logo_url: string | null
+  icon_url: string | null
   timezone: string | null
   created_at: string
 }

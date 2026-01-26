@@ -135,12 +135,24 @@ export default async function SharePage({ params, searchParams }: SharePageProps
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
-            {client?.brand_primary_color && (
+            {client?.logo_url ? (
+              <img 
+                src={client.logo_url} 
+                alt={client.name} 
+                className="h-12 w-auto object-contain"
+              />
+            ) : client?.icon_url ? (
+              <img 
+                src={client.icon_url} 
+                alt={client.name} 
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : client?.brand_primary_color ? (
               <div
                 className="w-12 h-12 rounded-xl"
                 style={{ backgroundColor: client.brand_primary_color }}
               />
-            )}
+            ) : null}
             <div>
               <h1 className="text-2xl font-bold">{client?.name}</h1>
               <p className="text-muted-foreground">
