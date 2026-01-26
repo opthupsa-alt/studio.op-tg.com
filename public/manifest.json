@@ -1,22 +1,26 @@
 {
   "name": "منصة تخطيط المحتوى - الهدف الأمثل للتسويق",
-  "short_name": "OPT Content",
+  "short_name": "OPT Studio",
   "description": "منصة احترافية لتخطيط وإدارة المحتوى التسويقي على وسائل التواصل الاجتماعي",
-  "start_url": "/",
+  "start_url": "https://studio.op-tg.com/",
+  "scope": "https://studio.op-tg.com/",
+  "id": "opt-studio",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1b98d5",
+  "theme_color": "#3b5998",
   "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/opt-logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/opt-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "lang": "ar",

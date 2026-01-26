@@ -20,17 +20,17 @@ export const metadata: Metadata = {
   authors: [{ name: 'Optimum Target for Marketing & Business Development', url: 'https://op-target.com' }],
   creator: 'Optimum Target for Marketing & Business Development',
   publisher: 'Optimum Target for Marketing & Business Development',
-  metadataBase: new URL('https://op-target.com'),
+  metadataBase: new URL('https://studio.op-tg.com'),
   openGraph: {
     type: 'website',
     locale: 'ar_SA',
-    url: 'https://op-target.com',
-    siteName: 'الهدف الأمثل للتسويق | OPT',
+    url: 'https://studio.op-tg.com',
+    siteName: 'الهدف الأمثل للتسويق | OPT Studio',
     title: 'منصة تخطيط المحتوى | الهدف الأمثل للتسويق',
     description: 'منصة احترافية لتخطيط وإدارة المحتوى التسويقي على وسائل التواصل الاجتماعي',
     images: [
       {
-        url: '/z806a4z806a4z806.png',
+        url: 'https://studio.op-tg.com/z806a4z806a4z806.png',
         width: 1200,
         height: 630,
         alt: 'الهدف الأمثل للتسويق وتطوير الأعمال',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     creator: '@optdm_sa',
     title: 'منصة تخطيط المحتوى | الهدف الأمثل للتسويق',
     description: 'منصة احترافية لتخطيط وإدارة المحتوى التسويقي على وسائل التواصل الاجتماعي',
-    images: ['/z806a4z806a4z806.png'],
+    images: ['https://studio.op-tg.com/z806a4z806a4z806.png'],
   },
   icons: {
     icon: [
