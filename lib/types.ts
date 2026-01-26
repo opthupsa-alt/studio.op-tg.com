@@ -132,7 +132,7 @@ export type CalendarDay = {
   posts: Post[]
 }
 
-export type ViewMode = "calendar" | "grid" | "kanban" | "list" | "monthly-grid"
+export type ViewMode = "calendar" | "grid" | "kanban" | "list" | "monthly-grid" | "instagram"
 
 export type FilterState = {
   clients: string[]

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { createPublicClient } from "@/lib/supabase/server"
-import { PublicGridView } from "@/components/public-grid-view"
+import { ShareViewSwitcher } from "@/components/share-view-switcher"
 import { SharePasswordForm } from "@/components/share-password-form"
 
 // Force dynamic rendering for this page
@@ -176,7 +176,7 @@ export default async function SharePage({ params, searchParams }: SharePageProps
             <p className="text-lg">لا توجد منشورات لهذا الشهر</p>
           </div>
         ) : (
-          <PublicGridView posts={posts} clientColor={client?.brand_primary_color} />
+          <ShareViewSwitcher posts={posts} client={client} />
         )}
       </main>
 

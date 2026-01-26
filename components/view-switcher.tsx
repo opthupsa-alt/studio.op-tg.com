@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, LayoutGrid, Kanban, List, Grid3X3 } from "lucide-react"
+import { Calendar, LayoutGrid, Kanban, List, Grid3X3, Instagram } from "lucide-react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Tooltip,
@@ -21,6 +21,7 @@ const views = [
   { value: "kanban" as const, icon: Kanban, label: "كانبان" },
   { value: "list" as const, icon: List, label: "القائمة" },
   { value: "monthly-grid" as const, icon: Grid3X3, label: "الشبكة الشهرية" },
+  { value: "instagram" as const, icon: Instagram, label: "عرض إنستجرام" },
 ]
 
 export function ViewSwitcher({ value, onChange }: ViewSwitcherProps) {

@@ -11,6 +11,7 @@ import { GridView } from "@/components/grid-view"
 import { KanbanView } from "@/components/kanban-view"
 import { ListView } from "@/components/list-view"
 import { MonthlyGridView } from "@/components/monthly-grid-view"
+import { InstagramMockup } from "@/components/instagram-mockup"
 import { PostSidePanel } from "@/components/post-side-panel"
 import { FilterPanel } from "@/components/filter-panel"
 import { createPost, updatePost, deletePost, submitForReview } from "@/lib/actions"
@@ -474,6 +475,16 @@ export function DashboardContent({
             platforms={platforms}
             onPostClick={handlePostClick}
           />
+        )}
+
+        {viewMode === "instagram" && (
+          <div className="flex justify-center py-4">
+            <InstagramMockup
+              posts={filteredPosts}
+              client={filters.clients.length === 1 ? clients.find(c => c.id === filters.clients[0]) || null : null}
+              showApprovalBadges={true}
+            />
+          </div>
         )}
       </main>
 
