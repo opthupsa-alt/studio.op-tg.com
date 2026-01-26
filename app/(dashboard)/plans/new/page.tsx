@@ -128,7 +128,8 @@ export default function NewPlanPage() {
       }
       
       console.log('Plan created:', newPlan)
-      router.push('/calendar')
+      // Navigate to calendar with the selected month and year
+      router.push(`/calendar?client=${selectedClient}&year=${selectedYear}&month=${selectedMonth}`)
     } catch (err) {
       console.error('Error:', err)
       alert('حدث خطأ غير متوقع')

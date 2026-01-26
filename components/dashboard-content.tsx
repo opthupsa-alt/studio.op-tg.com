@@ -64,6 +64,20 @@ export function DashboardContent({
     setLocalPosts(initialPosts)
   }, [initialPosts])
 
+  // قراءة الشهر والسنة من URL وتحديث التقويم
+  useEffect(() => {
+    const yearParam = searchParams.get('year')
+    const monthParam = searchParams.get('month')
+    
+    if (yearParam && monthParam) {
+      const year = parseInt(yearParam)
+      const month = parseInt(monthParam) - 1 // JavaScript months are 0-indexed
+      if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
+        setCurrentDate(new Date(year, month, 1))
+      }
+    }
+  }, [searchParams])
+
   // جلب دور المستخدم الحالي
   useEffect(() => {
     const fetchUserRole = async () => {
