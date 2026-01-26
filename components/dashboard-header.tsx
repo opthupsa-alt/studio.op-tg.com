@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -25,11 +26,32 @@ import {
 import { ViewSwitcher } from "@/components/view-switcher"
 import type { ViewMode, Client } from "@/lib/types"
 
+const MONTHS = [
+  { value: "0", label: "يناير" },
+  { value: "1", label: "فبراير" },
+  { value: "2", label: "مارس" },
+  { value: "3", label: "أبريل" },
+  { value: "4", label: "مايو" },
+  { value: "5", label: "يونيو" },
+  { value: "6", label: "يوليو" },
+  { value: "7", label: "أغسطس" },
+  { value: "8", label: "سبتمبر" },
+  { value: "9", label: "أكتوبر" },
+  { value: "10", label: "نوفمبر" },
+  { value: "11", label: "ديسمبر" },
+]
+
+const YEARS = Array.from({ length: 10 }, (_, i) => {
+  const year = new Date().getFullYear() - 2 + i
+  return { value: year.toString(), label: year.toString() }
+})
+
 interface DashboardHeaderProps {
   currentDate: Date
   onPrevMonth: () => void
   onNextMonth: () => void
   onToday: () => void
+  onDateChange: (date: Date) => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   onNewPost: () => void
@@ -44,6 +66,7 @@ export function DashboardHeader({
   onPrevMonth,
   onNextMonth,
   onToday,
+  onDateChange,
   viewMode,
   onViewModeChange,
   onNewPost,
@@ -67,26 +90,60 @@ export function DashboardHeader({
     }
   }
 
+  const handleMonthChange = (month: string) => {
+    const newDate = new Date(currentDate.getFullYear(), parseInt(month), 1)
+    onDateChange(newDate)
+  }
+
+  const handleYearChange = (year: string) => {
+    const newDate = new Date(parseInt(year), currentDate.getMonth(), 1)
+    onDateChange(newDate)
+  }
+
   return (
     <header className="sticky top-0 z-10 flex flex-wrap h-auto min-h-14 shrink-0 items-center gap-2 border-b bg-background px-2 sm:px-4 py-2">
       <SidebarTrigger className="-mr-1" />
       <Separator orientation="vertical" className="ml-2 h-4 hidden sm:block" />
-      {/* Month/Year Display - Always visible */}
-      <div className="font-semibold text-sm sm:text-lg text-primary">
-        {format(currentDate, "MMMM yyyy", { locale: ar })}
+      
+      {/* Month/Year Selectors */}
+      <div className="flex items-center gap-1">
+        <Select value={currentDate.getMonth().toString()} onValueChange={handleMonthChange}>
+          <SelectTrigger className="w-24 sm:w-28 h-8 sm:h-9 text-xs sm:text-sm font-semibold">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MONTHS.map((month) => (
+              <SelectItem key={month.value} value={month.value}>
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select value={currentDate.getFullYear().toString()} onValueChange={handleYearChange}>
+          <SelectTrigger className="w-20 sm:w-24 h-8 sm:h-9 text-xs sm:text-sm font-semibold">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEARS.map((year) => (
+              <SelectItem key={year.value} value={year.value}>
+                {year.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="flex items-center gap-1 mr-2 sm:mr-4">
-        {/* السهم الأيسر للشهر التالي - على اليمين */}
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth} title="الشهر التالي">
-          <ChevronLeft className="size-4" />
+      {/* Navigation Arrows - السابق يمين، التالي يسار */}
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth} title="الشهر السابق">
+          <ChevronRight className="size-4" />
         </Button>
         <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3" onClick={onToday}>
           اليوم
         </Button>
-        {/* السهم الأيمن للشهر السابق - على اليسار */}
-        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onPrevMonth} title="الشهر السابق">
-          <ChevronRight className="size-4" />
+        <Button variant="outline" size="icon" className="size-8 sm:size-9" onClick={onNextMonth} title="الشهر التالي">
+          <ChevronLeft className="size-4" />
         </Button>
       </div>
 

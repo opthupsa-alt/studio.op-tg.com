@@ -164,6 +164,7 @@ export function DashboardContent({
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1))
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1))
   const handleToday = () => setCurrentDate(new Date())
+  const handleDateChange = (date: Date) => setCurrentDate(date)
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode)
@@ -418,6 +419,7 @@ export function DashboardContent({
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         onToday={handleToday}
+        onDateChange={handleDateChange}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
         onNewPost={handleNewPost}
