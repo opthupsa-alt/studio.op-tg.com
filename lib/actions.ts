@@ -233,6 +233,43 @@ export async function submitForReview(id: string) {
   return updatePostStatus(id, "client_review")
 }
 
+export async function submitMultipleForReview(postIds: string[]) {
+  const supabase = await createClient()
+
+  // Check if current user is admin/manager
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  const { data: currentMember } = await supabase
+    .from("team_members")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  if (!currentMember || !["admin", "manager"].includes(currentMember.role)) {
+    return { error: "Only admins and managers can send posts for review" }
+  }
+
+  // Update all posts to client_review status
+  const { error } = await supabase
+    .from("posts")
+    .update({ status: "client_review" })
+    .in("id", postIds)
+
+  if (error) {
+    console.error("Error submitting posts for review:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/")
+  revalidatePath("/calendar")
+  revalidatePath("/grid")
+  revalidatePath("/kanban")
+  revalidatePath("/list")
+  
+  return { success: true, count: postIds.length }
+}
+
 export async function approvePost(id: string, feedback?: string) {
   const supabase = await createClient()
 

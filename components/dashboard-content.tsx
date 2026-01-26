@@ -5,6 +5,8 @@ import React, { useEffect } from "react"
 import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { addMonths, subMonths, format } from "date-fns"
+import { Send, X, CheckSquare } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { CalendarView } from "@/components/calendar-view"
 import { GridView } from "@/components/grid-view"
@@ -14,7 +16,7 @@ import { MonthlyGridView } from "@/components/monthly-grid-view"
 import { InstagramMockup } from "@/components/instagram-mockup"
 import { PostSidePanel } from "@/components/post-side-panel"
 import { FilterPanel } from "@/components/filter-panel"
-import { createPost, updatePost, deletePost, submitForReview } from "@/lib/actions"
+import { createPost, updatePost, deletePost, submitForReview, submitMultipleForReview } from "@/lib/actions"
 import { createClient } from "@/lib/supabase/client"
 import type { Post, Platform, Client, Plan, ViewMode, FilterState, PostStatus, TeamMember } from "@/lib/types"
 
@@ -413,6 +415,40 @@ export function DashboardContent({
     setSearchQuery("")
   }
 
+  const [isSendingToReview, setIsSendingToReview] = useState(false)
+
+  const handleSendMultipleToReview = async () => {
+    if (selectedPosts.length === 0) return
+    
+    // تأكيد الإرسال
+    const confirmMessage = `هل تريد إرسال ${selectedPosts.length} منشور للمراجعة؟`
+    if (!confirm(confirmMessage)) return
+    
+    setIsSendingToReview(true)
+    try {
+      const result = await submitMultipleForReview(selectedPosts)
+      
+      if (result.error) {
+        alert(result.error)
+      } else {
+        // تحديث الحالة المحلية
+        setLocalPosts(prev => prev.map(post => 
+          selectedPosts.includes(post.id) 
+            ? { ...post, status: "client_review" as PostStatus }
+            : post
+        ))
+        setSelectedPosts([])
+        alert(`تم إرسال ${result.count} منشور للمراجعة بنجاح!`)
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Error sending to review:", error)
+      alert("حدث خطأ أثناء إرسال المنشورات للمراجعة")
+    } finally {
+      setIsSendingToReview(false)
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <DashboardHeader
@@ -429,6 +465,39 @@ export function DashboardContent({
         onSearchChange={setSearchQuery}
         selectedClient={filters.clients.length === 1 ? clients.find(c => c.id === filters.clients[0]) : null}
       />
+
+      {/* Selection Toolbar */}
+      {selectedPosts.length > 0 && ["admin", "manager"].includes(currentUserRole) && (
+        <div className="bg-primary/10 border-b px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="size-5 text-primary" />
+            <span className="font-medium">
+              تم تحديد {selectedPosts.length} منشور
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSendMultipleToReview}
+              disabled={isSendingToReview}
+              className="gap-2"
+            >
+              <Send className="size-4" />
+              {isSendingToReview ? "جاري الإرسال..." : "إرسال للمراجعة"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedPosts([])}
+              className="gap-2"
+            >
+              <X className="size-4" />
+              إلغاء التحديد
+            </Button>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 overflow-auto">
         {viewMode === "calendar" && (
