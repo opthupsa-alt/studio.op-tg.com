@@ -112,6 +112,13 @@ export function DashboardContent({
   // Filter posts - use localPosts for optimistic updates
   const filteredPosts = useMemo(() => {
     return localPosts.filter((post: Post) => {
+      // Month/Year filter - filter posts by current month
+      const postDate = new Date(post.publish_date)
+      if (postDate.getFullYear() !== currentDate.getFullYear() || 
+          postDate.getMonth() !== currentDate.getMonth()) {
+        return false
+      }
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -151,7 +158,7 @@ export function DashboardContent({
 
       return true
     })
-  }, [localPosts, searchQuery, filters])
+  }, [localPosts, searchQuery, filters, currentDate])
 
   // Handlers
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1))
