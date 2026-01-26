@@ -223,10 +223,12 @@ export function DashboardContent({
         plan_id: activePlan.id,
         client_id: activePlan.client_id,
         title: data.title || "منشور جديد",
+        description: (data as any).description || undefined,
         main_goal: data.main_goal || undefined,
         post_type: data.post_type || "post",
         status: data.status || "draft",
         publish_date: data.publish_date || format(postDate, "yyyy-MM-dd"),
+        platform_ids: (data as any).platform_ids || undefined,
       })
 
       if (result.error) {
@@ -242,10 +244,12 @@ export function DashboardContent({
       // Update existing post
       const result = await updatePost(selectedPost.id, {
         title: data.title,
+        description: (data as any).description || undefined,
         main_goal: data.main_goal || undefined,
         post_type: data.post_type || undefined,
         status: data.status,
         publish_date: data.publish_date,
+        platform_ids: (data as any).platform_ids || undefined,
       })
 
       if (result.error) {

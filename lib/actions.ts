@@ -20,6 +20,7 @@ export async function createPost(data: {
   plan_id: string
   client_id: string
   title: string
+  description?: string
   main_goal?: string
   post_type?: string
   status: PostStatus
@@ -35,6 +36,7 @@ export async function createPost(data: {
       plan_id: data.plan_id,
       client_id: data.client_id,
       title: data.title,
+      description: data.description,
       main_goal: data.main_goal,
       post_type: data.post_type || "post",
       status: data.status,
@@ -70,10 +72,12 @@ export async function updatePost(
   id: string,
   data: {
     title?: string
+    description?: string
     main_goal?: string
     post_type?: string
     status?: PostStatus
     publish_date?: string | null
+    platform_ids?: string[]
   }
 ) {
   const supabase = await createClient()
@@ -109,10 +113,13 @@ export async function updatePost(
     }
   }
 
+  // Extract platform_ids from data to handle separately
+  const { platform_ids, ...postData } = data
+
   const { data: post, error } = await supabase
     .from("posts")
     .update({
-      ...data,
+      ...postData,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -122,6 +129,22 @@ export async function updatePost(
   if (error) {
     console.error("Error updating post:", error)
     return { error: error.message }
+  }
+
+  // Update platform associations if provided
+  if (platform_ids !== undefined) {
+    // Delete existing platform associations
+    await supabase.from("post_platforms").delete().eq("post_id", id)
+    
+    // Add new platform associations
+    if (platform_ids.length > 0) {
+      await supabase.from("post_platforms").insert(
+        platform_ids.map((platformId) => ({
+          post_id: id,
+          platform_id: platformId,
+        }))
+      )
+    }
   }
 
   revalidateAll()

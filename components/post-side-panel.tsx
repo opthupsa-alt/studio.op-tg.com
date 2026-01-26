@@ -164,10 +164,12 @@ export function PostSidePanel({
       await onSave({
         id: post?.id,
         title,
+        description: mainContent || undefined,
         main_goal: mainGoal as Post["main_goal"],
         post_type: postType as Post["post_type"],
         status,
         publish_date: publishDate ? format(publishDate, "yyyy-MM-dd") : undefined,
+        platform_ids: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
       })
 
     // Save variants if post exists and has variants
