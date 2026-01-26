@@ -995,6 +995,28 @@ export async function deletePlan(id: string) {
     return { error: "Only admins and managers can delete plans" }
   }
 
+  // Get all posts for this plan
+  const { data: posts } = await supabase
+    .from("posts")
+    .select("id")
+    .eq("plan_id", id)
+
+  // Delete related data for each post
+  if (posts && posts.length > 0) {
+    const postIds = posts.map(p => p.id)
+    
+    // Delete comments, approvals, assets, post_platforms, post_variants
+    await supabase.from("comments").delete().in("post_id", postIds)
+    await supabase.from("approvals").delete().in("post_id", postIds)
+    await supabase.from("assets").delete().in("post_id", postIds)
+    await supabase.from("post_platforms").delete().in("post_id", postIds)
+    await supabase.from("post_variants").delete().in("post_id", postIds)
+    
+    // Delete posts
+    await supabase.from("posts").delete().in("id", postIds)
+  }
+
+  // Now delete the plan
   const { error } = await supabase
     .from("plans")
     .delete()

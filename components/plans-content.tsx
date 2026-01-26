@@ -41,6 +41,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -72,6 +82,9 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
   const [usePassword, setUsePassword] = useState(false)
   const [sharePassword, setSharePassword] = useState("")
   const [copied, setCopied] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const getShareUrl = () => {
     if (!selectedPlanForShare) return ""
@@ -108,19 +121,29 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
       })
   })).filter(item => item.plans.length > 0 || true) // Show all clients
 
-  const handleDeletePlan = async (planId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه الخطة؟")) return
+  const openDeleteDialog = (plan: Plan) => {
+    setPlanToDelete(plan)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeletePlan = async () => {
+    if (!planToDelete) return
     
+    setIsDeleting(true)
     try {
-      const result = await deletePlan(planId)
+      const result = await deletePlan(planToDelete.id)
       if (result.error) {
         console.error("Error deleting plan:", result.error)
         alert(result.error)
       } else {
+        setDeleteDialogOpen(false)
+        setPlanToDelete(null)
         router.refresh()
       }
     } catch (error) {
       console.error("Error deleting plan:", error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -227,7 +250,7 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 className="text-destructive"
-                                onClick={() => handleDeletePlan(plan.id)}
+                                onClick={() => openDeleteDialog(plan)}
                               >
                                 <Trash2 className="ml-2 size-4" />
                                 حذف
@@ -355,6 +378,33 @@ export function PlansContent({ clients, plans }: PlansContentProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف هذه الخطة؟</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              <span className="text-destructive font-semibold">تحذير:</span> سيتم حذف الخطة وجميع المنشورات المرتبطة بها نهائياً.
+              {planToDelete && (
+                <span className="block mt-2">
+                  الخطة: {monthNames[planToDelete.month - 1]} {planToDelete.year}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePlan}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "جاري الحذف..." : "حذف الخطة"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
