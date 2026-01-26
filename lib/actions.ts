@@ -69,6 +69,7 @@ export async function updatePost(
   data: {
     title?: string
     main_goal?: string
+    post_type?: string
     status?: PostStatus
     publish_date?: string | null
   }

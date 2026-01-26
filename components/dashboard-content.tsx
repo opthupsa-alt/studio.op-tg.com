@@ -219,6 +219,7 @@ export function DashboardContent({
       const result = await updatePost(selectedPost.id, {
         title: data.title,
         main_goal: data.main_goal || undefined,
+        post_type: data.post_type || undefined,
         status: data.status,
         publish_date: data.publish_date,
       })
