@@ -6,7 +6,7 @@ import { Plus, Building2, MoreHorizontal, Edit, Trash2, Globe, Users, UserPlus, 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClientRecord, updateClientRecord, deleteClientRecord, createClientUser, deleteClientUser, toggleClientUserStatus, getClientUsers } from "@/lib/actions"
+import { createClientRecord, updateClientRecord, deleteClientRecord, deleteClientUser, toggleClientUserStatus, getClientUsers } from "@/lib/actions"
 import {
   Card,
   CardContent,
@@ -206,25 +206,43 @@ export function ClientsContent({ clients, platforms }: ClientsContentProps) {
     
     setIsSubmitting(true)
     try {
-      const result = await createClientUser({
-        email: newUserEmail,
-        full_name: newUserName,
-        client_id: selectedClientForUser.id,
-        password: newUserPassword,
+      // Call API directly from client with credentials
+      const response = await fetch('/api/auth/create-client-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: newUserEmail,
+          full_name: newUserName,
+          client_id: selectedClientForUser.id,
+          password: newUserPassword,
+        }),
       })
       
-      if (result.error) {
+      const result = await response.json()
+      
+      if (!response.ok || result.error) {
         console.error("Error creating client user:", result.error)
-        alert(result.error)
+        alert(result.error || 'فشل في إنشاء المستخدم')
       } else {
         setIsClientUserDialogOpen(false)
         setSelectedClientForUser(null)
         setNewUserPassword("")
+        // Refresh client users list
+        if (selectedClientForUser.id && expandedClients.has(selectedClientForUser.id)) {
+          const usersResult = await getClientUsers(selectedClientForUser.id)
+          if (usersResult.data) {
+            setClientUsers(prev => ({ ...prev, [selectedClientForUser.id]: usersResult.data as TeamMember[] }))
+          }
+        }
         alert(`تم إنشاء حساب العميل بنجاح!\n\nالبريد: ${newUserEmail}\nكلمة المرور: ${newUserPassword}\n\nيمكن للعميل الآن تسجيل الدخول مباشرة.`)
         router.refresh()
       }
     } catch (error) {
       console.error("Error creating client user:", error)
+      alert('حدث خطأ أثناء إنشاء المستخدم')
     } finally {
       setIsSubmitting(false)
     }
