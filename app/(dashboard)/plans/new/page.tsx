@@ -83,17 +83,52 @@ export default function NewPlanPage() {
     if (!selectedClient || !selectedMonth || !selectedYear) return
 
     setIsLoading(true)
-    // TODO: Implement plan creation via server action
-    console.log("Creating plan:", {
-      client_id: selectedClient,
-      month: parseInt(selectedMonth),
-      year: parseInt(selectedYear),
-    })
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    router.push("/")
+    try {
+      const supabase = createClient()
+      
+      // Check if plan already exists
+      const { data: existingPlan } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('client_id', selectedClient)
+        .eq('month', parseInt(selectedMonth))
+        .eq('year', parseInt(selectedYear))
+        .single()
+      
+      if (existingPlan) {
+        alert('هذه الخطة موجودة بالفعل')
+        setIsLoading(false)
+        return
+      }
+      
+      // Create new plan
+      const { data: newPlan, error } = await supabase
+        .from('plans')
+        .insert({
+          client_id: selectedClient,
+          month: parseInt(selectedMonth),
+          year: parseInt(selectedYear),
+          status: 'active'
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Error creating plan:', error)
+        alert('حدث خطأ أثناء إنشاء الخطة: ' + error.message)
+        setIsLoading(false)
+        return
+      }
+      
+      console.log('Plan created:', newPlan)
+      router.push('/calendar')
+    } catch (err) {
+      console.error('Error:', err)
+      alert('حدث خطأ غير متوقع')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
