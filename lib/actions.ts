@@ -494,7 +494,7 @@ export async function addComment(postId: string, content: string, scope: "intern
     .from("comments")
     .insert({
       post_id: postId,
-      user_id: teamMember.id,
+      user_id: user.id,  // Use auth user id, not team_member.id
       comment: content,
       scope,
     })

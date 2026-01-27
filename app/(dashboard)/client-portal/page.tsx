@@ -57,14 +57,27 @@ async function getClientData() {
   if (postIds.length > 0) {
     const { data: comments } = await supabase
       .from("comments")
-      .select("*, user:team_members(id, full_name, email, role)")
+      .select("*")
       .in("post_id", postIds)
       .eq("scope", "client")
+      .order("created_at", { ascending: true })
     
-    if (comments) {
+    if (comments && comments.length > 0) {
+      // Get unique user IDs and fetch their team member info
+      const userIds = [...new Set(comments.map(c => c.user_id))]
+      const { data: users } = await supabase
+        .from("team_members")
+        .select("user_id, full_name, email, role")
+        .in("user_id", userIds)
+      
+      const usersMap = new Map(users?.map(u => [u.user_id, u]) || [])
+      
       comments.forEach(c => {
         if (!commentsMap[c.post_id]) commentsMap[c.post_id] = []
-        commentsMap[c.post_id].push(c)
+        commentsMap[c.post_id].push({
+          ...c,
+          user: usersMap.get(c.user_id) || null
+        })
       })
     }
   }
