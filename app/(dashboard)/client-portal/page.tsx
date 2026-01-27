@@ -14,13 +14,20 @@ async function getClientData() {
   }
 
   // Get team member info
-  const { data: teamMember } = await supabase
+  const { data: teamMember, error: teamMemberError } = await supabase
     .from("team_members")
     .select("*, client:clients(*)")
     .eq("user_id", user.id)
     .single()
 
+  console.log("=== CLIENT PORTAL DEBUG ===")
+  console.log("User ID:", user.id)
+  console.log("Team Member:", teamMember)
+  console.log("Team Member Error:", teamMemberError)
+  console.log("Client ID:", teamMember?.client_id)
+
   if (!teamMember || teamMember.role !== "client" || !teamMember.client_id) {
+    console.log("REDIRECT: teamMember check failed")
     return null
   }
 
@@ -61,8 +68,11 @@ async function getClientData() {
     .eq("client_id", teamMember.client_id)
     .order("publish_date", { ascending: true })
   
+  console.log("=== POSTS QUERY DEBUG ===")
+  console.log("Querying posts for client_id:", teamMember.client_id)
   console.log("Posts query error:", postsError)
   console.log("Posts count:", posts?.length)
+  console.log("First 3 posts:", posts?.slice(0, 3).map(p => ({ id: p.id, title: p.title, client_id: p.client_id })))
 
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
