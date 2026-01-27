@@ -430,6 +430,14 @@ export function ClientPortalContent({
 
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
+          {/* Debug Info - REMOVE LATER */}
+          <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 text-sm">
+            <p><strong>Debug:</strong> Total posts received: {posts.length}</p>
+            <p>Current month posts: {currentMonthPosts.length}</p>
+            <p>Current date: {currentDate.getFullYear()}-{currentDate.getMonth() + 1}</p>
+            <p>Available months: {availableMonths.map(m => `${m.year}-${m.month + 1}`).join(", ") || "None"}</p>
+          </div>
+
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <StatCard 
