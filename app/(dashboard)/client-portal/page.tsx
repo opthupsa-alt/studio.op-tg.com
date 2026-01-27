@@ -42,8 +42,9 @@ async function getClientData() {
     .eq("month", currentMonth)
     .single()
 
-  // Get posts for this client (only visible ones)
-  const { data: posts } = await supabase
+  // Get posts for this client
+  // Check if visible_to_client column exists, if not show all posts
+  const { data: posts, error: postsError } = await supabase
     .from("posts")
     .select(`
       *,
@@ -58,8 +59,10 @@ async function getClientData() {
       approvals(*)
     `)
     .eq("client_id", teamMember.client_id)
-    .eq("visible_to_client", true)
     .order("publish_date", { ascending: true })
+  
+  console.log("Posts query error:", postsError)
+  console.log("Posts count:", posts?.length)
 
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
