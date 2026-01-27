@@ -100,10 +100,6 @@ export function ClientPortalContent({
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
   
-  // Debug: Log posts on mount
-  console.log("Client Portal - Total posts received:", posts.length)
-  console.log("Client Portal - Posts:", posts.map(p => ({ id: p.id, title: p.title, status: p.status, date: p.publish_date })))
-  
   // Find the first month that has posts, prioritizing pending reviews
   const getInitialMonth = () => {
     if (posts.length === 0) {
@@ -163,11 +159,11 @@ export function ClientPortalContent({
     })
   }, [posts, currentDate])
 
-  // Group posts by status
-  const pendingReview = currentMonthPosts.filter((p) => p.status === "client_review")
+  // Group posts by status - use awaiting_client_approval for pending review
+  const pendingReview = currentMonthPosts.filter((p) => p.awaiting_client_approval === true)
   const approved = currentMonthPosts.filter((p) => p.status === "approved" || p.status === "scheduled" || p.status === "posted")
   const rejected = currentMonthPosts.filter((p) => p.status === "rejected")
-  const inProgress = currentMonthPosts.filter((p) => !["client_review", "approved", "scheduled", "posted", "rejected"].includes(p.status))
+  const inProgress = currentMonthPosts.filter((p) => !p.awaiting_client_approval && !["approved", "scheduled", "posted", "rejected"].includes(p.status))
 
   // Stats
   const stats = useMemo(() => ({
@@ -752,7 +748,7 @@ export function ClientPortalContent({
               </ScrollArea>
 
               {/* Panel Footer - Review Actions */}
-              {selectedPost.status === "client_review" && (
+              {selectedPost.awaiting_client_approval && (
                 <div className="p-4 border-t space-y-2">
                   <p className="text-sm text-muted-foreground text-center mb-3">
                     هل توافق على هذا المنشور؟

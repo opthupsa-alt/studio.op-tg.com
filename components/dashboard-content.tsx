@@ -5,7 +5,7 @@ import React, { useEffect } from "react"
 import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { addMonths, subMonths, format } from "date-fns"
-import { Send, X, CheckSquare } from "lucide-react"
+import { Send, X, CheckSquare, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { CalendarView } from "@/components/calendar-view"
@@ -16,7 +16,7 @@ import { MonthlyGridView } from "@/components/monthly-grid-view"
 import { InstagramMockup } from "@/components/instagram-mockup"
 import { PostSidePanel } from "@/components/post-side-panel"
 import { FilterPanel } from "@/components/filter-panel"
-import { createPost, updatePost, deletePost, submitForReview, submitMultipleForReview } from "@/lib/actions"
+import { createPost, updatePost, deletePost, submitForReview, submitMultipleForReview, setPostsVisibleToClient } from "@/lib/actions"
 import { createClient } from "@/lib/supabase/client"
 import type { Post, Platform, Client, Plan, ViewMode, FilterState, PostStatus, TeamMember } from "@/lib/types"
 
@@ -416,6 +416,7 @@ export function DashboardContent({
   }
 
   const [isSendingToReview, setIsSendingToReview] = useState(false)
+  const [isSettingVisibility, setIsSettingVisibility] = useState(false)
 
   const handleSendMultipleToReview = async () => {
     if (selectedPosts.length === 0) return
@@ -446,6 +447,36 @@ export function DashboardContent({
       alert("حدث خطأ أثناء إرسال المنشورات للمراجعة")
     } finally {
       setIsSendingToReview(false)
+    }
+  }
+
+  const handleShowToClient = async () => {
+    if (selectedPosts.length === 0) return
+    
+    const confirmMessage = `هل تريد إظهار ${selectedPosts.length} منشور للعميل؟`
+    if (!confirm(confirmMessage)) return
+    
+    setIsSettingVisibility(true)
+    try {
+      const result = await setPostsVisibleToClient(selectedPosts, true, false)
+      
+      if (result.error) {
+        alert(result.error)
+      } else {
+        setLocalPosts(prev => prev.map(post => 
+          selectedPosts.includes(post.id) 
+            ? { ...post, visible_to_client: true }
+            : post
+        ))
+        setSelectedPosts([])
+        alert(`تم إظهار ${result.count} منشور للعميل بنجاح!`)
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Error setting visibility:", error)
+      alert("حدث خطأ أثناء تحديث رؤية المنشورات")
+    } finally {
+      setIsSettingVisibility(false)
     }
   }
 
@@ -485,6 +516,16 @@ export function DashboardContent({
             >
               <Send className="size-4" />
               {isSendingToReview ? "جاري الإرسال..." : "إرسال للمراجعة"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleShowToClient}
+              disabled={isSettingVisibility}
+              className="gap-2"
+            >
+              <Eye className="size-4" />
+              {isSettingVisibility ? "جاري التحديث..." : "إظهار للعميل"}
             </Button>
             <Button
               variant="ghost"

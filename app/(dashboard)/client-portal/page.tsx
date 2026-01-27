@@ -42,7 +42,7 @@ async function getClientData() {
     .eq("month", currentMonth)
     .single()
 
-  // Get posts for this client
+  // Get posts for this client (only visible ones)
   const { data: posts } = await supabase
     .from("posts")
     .select(`
@@ -58,6 +58,7 @@ async function getClientData() {
       approvals(*)
     `)
     .eq("client_id", teamMember.client_id)
+    .eq("visible_to_client", true)
     .order("publish_date", { ascending: true })
 
   const transformedPosts = (posts || []).map((post: any) => ({

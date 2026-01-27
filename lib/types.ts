@@ -83,6 +83,8 @@ export type Post = {
   created_by: string | null
   locked: boolean
   position: number
+  visible_to_client: boolean
+  awaiting_client_approval: boolean
   created_at: string
   updated_at: string
   plan?: Plan

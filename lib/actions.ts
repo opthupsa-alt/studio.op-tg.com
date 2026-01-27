@@ -230,7 +230,24 @@ export async function updatePostDate(id: string, publish_date: string) {
 }
 
 export async function submitForReview(id: string) {
-  return updatePostStatus(id, "client_review")
+  const supabase = await createClient()
+  
+  const { error } = await supabase
+    .from("posts")
+    .update({ 
+      status: "client_review",
+      visible_to_client: true,
+      awaiting_client_approval: true
+    })
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error submitting for review:", error)
+    return { error: error.message }
+  }
+
+  revalidateAll()
+  return { success: true }
 }
 
 export async function submitMultipleForReview(postIds: string[]) {
@@ -250,10 +267,14 @@ export async function submitMultipleForReview(postIds: string[]) {
     return { error: "Only admins and managers can send posts for review" }
   }
 
-  // Update all posts to client_review status
+  // Update all posts to client_review status and make visible to client
   const { error } = await supabase
     .from("posts")
-    .update({ status: "client_review" })
+    .update({ 
+      status: "client_review",
+      visible_to_client: true,
+      awaiting_client_approval: true
+    })
     .in("id", postIds)
 
   if (error) {
@@ -266,6 +287,47 @@ export async function submitMultipleForReview(postIds: string[]) {
   revalidatePath("/grid")
   revalidatePath("/kanban")
   revalidatePath("/list")
+  
+  return { success: true, count: postIds.length }
+}
+
+export async function setPostsVisibleToClient(postIds: string[], visible: boolean = true, awaitingApproval: boolean = false) {
+  const supabase = await createClient()
+
+  // Check if current user is admin/manager
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  const { data: currentMember } = await supabase
+    .from("team_members")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  if (!currentMember || !["admin", "manager"].includes(currentMember.role)) {
+    return { error: "Only admins and managers can change post visibility" }
+  }
+
+  // Update posts visibility
+  const updateData: { visible_to_client: boolean; awaiting_client_approval?: boolean } = { 
+    visible_to_client: visible 
+  }
+  
+  if (awaitingApproval) {
+    updateData.awaiting_client_approval = true
+  }
+
+  const { error } = await supabase
+    .from("posts")
+    .update(updateData)
+    .in("id", postIds)
+
+  if (error) {
+    console.error("Error updating posts visibility:", error)
+    return { error: error.message }
+  }
+
+  revalidateAll()
   
   return { success: true, count: postIds.length }
 }
@@ -309,6 +371,7 @@ export async function approvePost(id: string, feedback?: string) {
     .update({ 
       status: "approved", 
       locked: true,
+      awaiting_client_approval: false,
       updated_at: new Date().toISOString() 
     })
     .eq("id", id)
@@ -376,6 +439,7 @@ export async function rejectPost(id: string, feedback: string) {
     .update({ 
       status: "rejected", 
       locked: false,
+      awaiting_client_approval: false,
       updated_at: new Date().toISOString() 
     })
     .eq("id", id)

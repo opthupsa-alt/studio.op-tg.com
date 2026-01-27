@@ -116,6 +116,8 @@ export function PostSidePanel({
   const [mainContent, setMainContent] = useState("")
   const [postType, setPostType] = useState("post")
   const [status, setStatus] = useState<PostStatus>("idea")
+  const [visibleToClient, setVisibleToClient] = useState(false)
+  const [awaitingClientApproval, setAwaitingClientApproval] = useState(false)
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>()
   const [scheduledTime, setScheduledTime] = useState("")
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -134,6 +136,8 @@ export function PostSidePanel({
       setMainGoal(post.main_goal || "")
       setPostType(post.post_type || "post")
       setStatus(post.status)
+      setVisibleToClient(post.visible_to_client || false)
+      setAwaitingClientApproval(post.awaiting_client_approval || false)
       setScheduledDate(post.publish_date ? new Date(post.publish_date) : undefined)
       setScheduledTime("")
       setSelectedPlatforms(post.platforms?.map((p) => p.id) || [])
@@ -146,6 +150,8 @@ export function PostSidePanel({
       setMainGoal("")
       setPostType("post")
       setStatus("idea")
+      setVisibleToClient(false)
+      setAwaitingClientApproval(false)
       setScheduledDate(defaultDate)
       setScheduledTime("")
       setSelectedPlatforms([])
@@ -168,6 +174,8 @@ export function PostSidePanel({
         main_goal: mainGoal as Post["main_goal"],
         post_type: postType as Post["post_type"],
         status,
+        visible_to_client: visibleToClient,
+        awaiting_client_approval: awaitingClientApproval,
         publish_date: publishDate ? format(publishDate, "yyyy-MM-dd") : undefined,
         platform_ids: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
       }
@@ -340,6 +348,40 @@ export function PostSidePanel({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Client Visibility Options */}
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+                  <Label className="text-sm font-semibold">إعدادات العميل</Label>
+                  
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="visible-to-client"
+                      checked={visibleToClient}
+                      onCheckedChange={(checked) => setVisibleToClient(checked === true)}
+                    />
+                    <Label htmlFor="visible-to-client" className="text-sm cursor-pointer">
+                      إظهار المنشور للعميل
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="awaiting-approval"
+                      checked={awaitingClientApproval}
+                      onCheckedChange={(checked) => {
+                        setAwaitingClientApproval(checked === true)
+                        if (checked) setVisibleToClient(true)
+                      }}
+                    />
+                    <Label htmlFor="awaiting-approval" className="text-sm cursor-pointer">
+                      في انتظار موافقة العميل
+                    </Label>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    تفعيل "انتظار الموافقة" يُظهر أزرار الاعتماد/الرفض للعميل
+                  </p>
                 </div>
 
                 <Separator />
