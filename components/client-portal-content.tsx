@@ -100,6 +100,11 @@ export function ClientPortalContent({
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
   
+  // Debug: Log posts received
+  console.log("=== CLIENT PORTAL COMPONENT DEBUG ===")
+  console.log("Posts received:", posts.length)
+  console.log("Posts dates:", posts.slice(0, 5).map(p => ({ title: p.title, date: p.publish_date })))
+  
   // Find the first month that has posts, prioritizing pending reviews
   const getInitialMonth = () => {
     if (posts.length === 0) {

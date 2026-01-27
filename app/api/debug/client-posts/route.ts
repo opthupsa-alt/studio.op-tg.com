@@ -66,9 +66,8 @@ export async function GET() {
             id: p.id,
             title: p.title,
             status: p.status,
-            client_id: p.client_id,
-            visible_to_client: p.visible_to_client,
-            awaiting_client_approval: p.awaiting_client_approval
+            publish_date: p.publish_date,
+            visible_to_client: p.visible_to_client
           }))
         },
         allPostsQuery: {
