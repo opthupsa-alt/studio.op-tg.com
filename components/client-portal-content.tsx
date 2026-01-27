@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { parseLocalDate } from "@/lib/date-utils"
 import { format, addMonths, subMonths } from "date-fns"
@@ -99,15 +99,76 @@ export function ClientPortalContent({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
+  const [localPosts, setLocalPosts] = useState<Post[]>(posts)
+
+  // Real-time subscription for comments
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // Subscribe to new comments
+    const channel = supabase
+      .channel('client-comments')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comments',
+          filter: `scope=eq.client`
+        },
+        async (payload) => {
+          const newComment = payload.new as any
+          
+          // Get user info for the new comment
+          const { data: user } = await supabase
+            .from('team_members')
+            .select('user_id, full_name, email, role')
+            .eq('user_id', newComment.user_id)
+            .single()
+          
+          // Update local posts with new comment
+          setLocalPosts(prev => prev.map(post => {
+            if (post.id === newComment.post_id) {
+              return {
+                ...post,
+                comments: [...(post.comments || []), { ...newComment, user }]
+              }
+            }
+            return post
+          }))
+
+          // Update selected post if it's the one with new comment
+          setSelectedPost(prev => {
+            if (prev && prev.id === newComment.post_id) {
+              return {
+                ...prev,
+                comments: [...(prev.comments || []), { ...newComment, user }]
+              }
+            }
+            return prev
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // Sync localPosts with posts prop
+  useEffect(() => {
+    setLocalPosts(posts)
+  }, [posts])
   
   // Find the first month that has posts, prioritizing pending reviews
   const getInitialMonth = () => {
-    if (posts.length === 0) {
+    if (localPosts.length === 0) {
       return new Date(currentYear, currentMonth - 1)
     }
     
     // First check if there are pending posts
-    const pendingPost = posts.find(p => p.status === "client_review")
+    const pendingPost = localPosts.find(p => p.status === "client_review")
     if (pendingPost) {
       const date = parseLocalDate(pendingPost.publish_date)
       return new Date(date.getFullYear(), date.getMonth())
@@ -125,7 +186,7 @@ export function ClientPortalContent({
   const availableMonths = useMemo(() => {
     const monthsSet = new Map<string, { year: number; month: number; count: number; pending: number }>()
     
-    posts.forEach((post) => {
+    localPosts.forEach((post) => {
       const postDate = parseLocalDate(post.publish_date)
       const key = `${postDate.getFullYear()}-${postDate.getMonth()}`
       const existing = monthsSet.get(key)
@@ -148,16 +209,16 @@ export function ClientPortalContent({
       if (a.year !== b.year) return b.year - a.year
       return b.month - a.month
     })
-  }, [posts])
+  }, [localPosts])
 
   // Filter posts for selected month
   const currentMonthPosts = useMemo(() => {
-    return posts.filter((post) => {
+    return localPosts.filter((post) => {
       const postDate = parseLocalDate(post.publish_date)
       return postDate.getFullYear() === currentDate.getFullYear() && 
              postDate.getMonth() === currentDate.getMonth()
     })
-  }, [posts, currentDate])
+  }, [localPosts, currentDate])
 
   // Group posts by status - use awaiting_client_approval for pending review
   const pendingReview = currentMonthPosts.filter((p) => p.awaiting_client_approval === true)
@@ -242,10 +303,41 @@ export function ClientPortalContent({
     
     setIsSubmitting(true)
     try {
-      await addComment(selectedPost.id, newComment, "client")
+      const result = await addComment(selectedPost.id, newComment, "client")
+      
+      if (result.data) {
+        // Get current user info
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: teamMember } = await supabase
+          .from('team_members')
+          .select('user_id, full_name, email, role')
+          .eq('user_id', user?.id)
+          .single()
+
+        const newCommentObj = {
+          ...result.data,
+          user: teamMember
+        }
+
+        // Update locally without page refresh
+        setSelectedPost(prev => prev ? {
+          ...prev,
+          comments: [...(prev.comments || []), newCommentObj]
+        } : null)
+
+        setLocalPosts(prev => prev.map(post => {
+          if (post.id === selectedPost.id) {
+            return {
+              ...post,
+              comments: [...(post.comments || []), newCommentObj]
+            }
+          }
+          return post
+        }))
+      }
+      
       setNewComment("")
-      // Refresh the page to get updated data
-      router.refresh()
     } catch (error) {
       console.error("Error adding comment:", error)
     } finally {
