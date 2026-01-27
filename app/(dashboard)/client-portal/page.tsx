@@ -49,22 +49,10 @@ async function getClientData() {
     .eq("month", currentMonth)
     .single()
 
-  // Get posts for this client
-  // Check if visible_to_client column exists, if not show all posts
+  // Get posts for this client - using simple query first
   const { data: posts, error: postsError } = await supabase
     .from("posts")
-    .select(`
-      *,
-      plan:plans(*),
-      post_platforms(
-        platform:platforms(*)
-      ),
-      comments(
-        *,
-        user:team_members(*)
-      ),
-      approvals(*)
-    `)
+    .select("*")
     .eq("client_id", teamMember.client_id)
     .order("publish_date", { ascending: true })
   
@@ -72,7 +60,6 @@ async function getClientData() {
   console.log("Querying posts for client_id:", teamMember.client_id)
   console.log("Posts query error:", postsError)
   console.log("Posts count:", posts?.length)
-  console.log("First 3 posts:", posts?.slice(0, 3).map(p => ({ id: p.id, title: p.title, client_id: p.client_id })))
 
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
