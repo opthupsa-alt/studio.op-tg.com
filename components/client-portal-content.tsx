@@ -100,11 +100,6 @@ export function ClientPortalContent({
   const [activeTab, setActiveTab] = useState("all")
   const [viewMode, setViewMode] = useState<"tabs" | "grid" | "instagram">("tabs")
   
-  // Debug: Log posts received
-  console.log("=== CLIENT PORTAL COMPONENT DEBUG ===")
-  console.log("Posts received:", posts.length)
-  console.log("Posts dates:", posts.slice(0, 5).map(p => ({ title: p.title, date: p.publish_date })))
-  
   // Find the first month that has posts, prioritizing pending reviews
   const getInitialMonth = () => {
     if (posts.length === 0) {
@@ -298,6 +293,15 @@ export function ClientPortalContent({
               </Badge>
             </div>
           )}
+          {/* Comments indicator */}
+          {post.comments && post.comments.filter((c: Comment) => c.scope === "client").length > 0 && (
+            <div className="absolute bottom-2 right-2">
+              <div className="bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs flex items-center gap-1 shadow-lg">
+                <MessageSquare className="size-3" />
+                {post.comments.filter((c: Comment) => c.scope === "client").length}
+              </div>
+            </div>
+          )}
         </div>
         {/* Content */}
         <CardContent className="p-4">
@@ -430,14 +434,6 @@ export function ClientPortalContent({
 
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
-          {/* Debug Info - REMOVE LATER */}
-          <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 text-sm">
-            <p><strong>Debug:</strong> Total posts received: {posts.length}</p>
-            <p>Current month posts: {currentMonthPosts.length}</p>
-            <p>Current date: {currentDate.getFullYear()}-{currentDate.getMonth() + 1}</p>
-            <p>Available months: {availableMonths.map(m => `${m.year}-${m.month + 1}`).join(", ") || "None"}</p>
-          </div>
-
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <StatCard 

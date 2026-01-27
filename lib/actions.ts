@@ -474,15 +474,19 @@ export async function addComment(postId: string, content: string, scope: "intern
     return { error: "Unauthorized" }
   }
 
-  // Get user's role
+  // Get team member info
   const { data: teamMember } = await supabase
     .from("team_members")
-    .select("role")
+    .select("id, role")
     .eq("user_id", user.id)
     .single()
 
+  if (!teamMember) {
+    return { error: "Team member not found" }
+  }
+
   // Client can only add client-scope comments
-  if (teamMember?.role === "client" && scope === "internal") {
+  if (teamMember.role === "client" && scope === "internal") {
     return { error: "Clients can only add client-scope comments" }
   }
 
@@ -490,7 +494,7 @@ export async function addComment(postId: string, content: string, scope: "intern
     .from("comments")
     .insert({
       post_id: postId,
-      user_id: user.id,
+      user_id: teamMember.id,
       comment: content,
       scope,
     })
@@ -500,6 +504,63 @@ export async function addComment(postId: string, content: string, scope: "intern
   if (error) {
     console.error("Error adding comment:", error)
     return { error: error.message }
+  }
+
+  // Get post info for notification
+  const { data: post } = await supabase
+    .from("posts")
+    .select("id, title, client_id")
+    .eq("id", postId)
+    .single()
+
+  if (post) {
+    // Create notifications for relevant users
+    if (scope === "client") {
+      // If client commented, notify admins/managers
+      const { data: admins } = await supabase
+        .from("team_members")
+        .select("id")
+        .in("role", ["admin", "manager"])
+
+      if (admins && admins.length > 0) {
+        const notifications = admins
+          .filter(a => a.id !== teamMember.id)
+          .map(admin => ({
+            user_id: admin.id,
+            title: "تعليق جديد من العميل",
+            message: `تعليق جديد على منشور "${post.title}"`,
+            type: "info",
+            link: `/posts/${post.id}`,
+          }))
+
+        if (notifications.length > 0) {
+          await supabase.from("notifications").insert(notifications)
+        }
+      }
+    } else {
+      // If admin/manager commented on client scope, notify client
+      const { data: clients } = await supabase
+        .from("team_members")
+        .select("id")
+        .eq("role", "client")
+        .eq("client_id", post.client_id)
+
+      if (clients && clients.length > 0) {
+        const notifications = clients
+          .filter(c => c.id !== teamMember.id)
+          .map(client => ({
+            user_id: client.id,
+            title: "تعليق جديد",
+            message: `تعليق جديد على منشور "${post.title}"`,
+            type: "info",
+            link: `/client-portal`,
+          }))
+
+        if (notifications.length > 0) {
+          await supabase.from("notifications").insert(notifications)
+        }
+      }
+    }
   }
 
   revalidateAll()

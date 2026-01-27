@@ -20,14 +20,7 @@ async function getClientData() {
     .eq("user_id", user.id)
     .single()
 
-  console.log("=== CLIENT PORTAL DEBUG ===")
-  console.log("User ID:", user.id)
-  console.log("Team Member:", teamMember)
-  console.log("Team Member Error:", teamMemberError)
-  console.log("Client ID:", teamMember?.client_id)
-
   if (!teamMember || teamMember.role !== "client" || !teamMember.client_id) {
-    console.log("REDIRECT: teamMember check failed")
     return null
   }
 
@@ -49,18 +42,24 @@ async function getClientData() {
     .eq("month", currentMonth)
     .single()
 
-  // Get posts for this client - using simple query first
+  // Get posts for this client with comments and platforms
   const { data: posts, error: postsError } = await supabase
     .from("posts")
-    .select("*")
+    .select(`
+      *,
+      plan:plans(*),
+      post_platforms(
+        platform:platforms(*)
+      ),
+      comments(
+        *,
+        user:team_members(id, full_name, email, role)
+      ),
+      approvals(*)
+    `)
     .eq("client_id", teamMember.client_id)
     .order("publish_date", { ascending: true })
   
-  console.log("=== POSTS QUERY DEBUG ===")
-  console.log("Querying posts for client_id:", teamMember.client_id)
-  console.log("Posts query error:", postsError)
-  console.log("Posts count:", posts?.length)
-
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
     platforms: post.post_platforms?.map((pp: any) => pp.platform).filter(Boolean) || [],
