@@ -42,27 +42,53 @@ async function getClientData() {
     .eq("month", currentMonth)
     .single()
 
-  // Get posts for this client with comments and platforms
-  const { data: posts, error: postsError } = await supabase
+  // Get posts for this client - simple query first
+  const { data: posts } = await supabase
     .from("posts")
-    .select(`
-      *,
-      plan:plans(*),
-      post_platforms(
-        platform:platforms(*)
-      ),
-      comments(
-        *,
-        user:team_members(id, full_name, email, role)
-      ),
-      approvals(*)
-    `)
+    .select("*")
     .eq("client_id", teamMember.client_id)
     .order("publish_date", { ascending: true })
+
+  // Get post IDs for related queries
+  const postIds = (posts || []).map(p => p.id)
+
+  // Fetch comments separately
+  let commentsMap: Record<string, any[]> = {}
+  if (postIds.length > 0) {
+    const { data: comments } = await supabase
+      .from("comments")
+      .select("*, user:team_members(id, full_name, email, role)")
+      .in("post_id", postIds)
+      .eq("scope", "client")
+    
+    if (comments) {
+      comments.forEach(c => {
+        if (!commentsMap[c.post_id]) commentsMap[c.post_id] = []
+        commentsMap[c.post_id].push(c)
+      })
+    }
+  }
+
+  // Fetch platforms separately
+  let platformsMap: Record<string, any[]> = {}
+  if (postIds.length > 0) {
+    const { data: postPlatforms } = await supabase
+      .from("post_platforms")
+      .select("post_id, platform:platforms(*)")
+      .in("post_id", postIds)
+    
+    if (postPlatforms) {
+      postPlatforms.forEach(pp => {
+        if (!platformsMap[pp.post_id]) platformsMap[pp.post_id] = []
+        if (pp.platform) platformsMap[pp.post_id].push(pp.platform)
+      })
+    }
+  }
   
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
-    platforms: post.post_platforms?.map((pp: any) => pp.platform).filter(Boolean) || [],
+    platforms: platformsMap[post.id] || [],
+    comments: commentsMap[post.id] || [],
   }))
 
   // Get platforms
