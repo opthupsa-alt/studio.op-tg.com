@@ -144,12 +144,31 @@ export function PostCard({ post, variant = "full", onClick, onDragStart }: PostC
   // Full variant
   const postType = postTypeConfig[post.post_type || "post"]
   const PostTypeIcon = postType.icon
+  
+  // Get first image from assets
+  const firstImage = post.assets?.find((a: any) => a.type === "image")
 
   return (
     <div
       onClick={onClick}
-      className="p-4 rounded-xl border bg-card cursor-pointer hover:shadow-lg transition-shadow"
+      className="rounded-xl border bg-card cursor-pointer hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full"
     >
+      {/* Post Image */}
+      {firstImage ? (
+        <div className="aspect-video w-full overflow-hidden bg-muted">
+          <img 
+            src={firstImage.url} 
+            alt={post.title} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="aspect-video w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+          <PostTypeIcon className="size-12 text-muted-foreground/30" />
+        </div>
+      )}
+      
+      <div className="p-4 flex flex-col flex-1">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div
@@ -181,7 +200,7 @@ export function PostCard({ post, variant = "full", onClick, onDragStart }: PostC
         </Badge>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t">
+      <div className="flex items-center justify-between pt-3 border-t mt-auto">
         <div className="flex items-center gap-1">
           {post.platforms?.map((platform) => (
             <PlatformIcon
@@ -197,6 +216,7 @@ export function PostCard({ post, variant = "full", onClick, onDragStart }: PostC
             {format(parseLocalDate(post.publish_date), "d MMMM yyyy", { locale: ar })}
           </div>
         )}
+      </div>
       </div>
     </div>
   )

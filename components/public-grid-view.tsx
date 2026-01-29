@@ -87,6 +87,9 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
         const dayName = format(publishDate, "EEEE", { locale: ar })
         const formattedDate = format(publishDate, "d MMMM yyyy", { locale: ar })
 
+        // Get first image from assets
+        const firstImage = post.assets?.find((a: any) => a.type === "image")
+
         return (
           <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
             {/* Color indicator */}
@@ -95,6 +98,21 @@ export function PublicGridView({ posts, clientColor }: PublicGridViewProps) {
                 className="h-1 w-full"
                 style={{ backgroundColor: clientColor }}
               />
+            )}
+
+            {/* Post Image */}
+            {firstImage ? (
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                <img 
+                  src={firstImage.url} 
+                  alt={post.title} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="aspect-video w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                <PostTypeIcon className="size-12 text-muted-foreground/30" />
+              </div>
             )}
 
             <CardHeader className="pb-3">
