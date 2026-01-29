@@ -68,25 +68,16 @@ export async function getPosts(options?: {
   const supabase = await createClient()
   const { page = 1, pageSize = 100, clientId, status } = options || {}
   
-  // Build query
+  // Build query - simplified for performance
   let query = supabase
     .from("posts")
     .select(`
       *,
-      plan:plans(
-        *,
-        client:clients(*)
-      ),
-      client:clients(*),
+      client:clients(id, name, icon_url, logo_url, brand_primary_color),
       post_platforms(
-        platform:platforms(*)
+        platform:platforms(id, name, icon)
       ),
-      variants:post_variants(
-        *,
-        platform:platforms(*)
-      ),
-      comments(*),
-      assets(*)
+      assets(id, type, url, name)
     `)
   
   // Apply filters
@@ -161,20 +152,14 @@ export async function getPostById(id: string): Promise<Post | null> {
     .from("posts")
     .select(`
       *,
-      plan:plans(
-        *,
-        client:clients(*)
-      ),
+      client:clients(id, name, icon_url, logo_url, brand_primary_color),
       post_platforms(
-        platform:platforms(*)
+        platform:platforms(id, name, icon)
       ),
-      variants:post_variants(
-        *,
-        platform:platforms(*)
-      ),
+      variants:post_variants(*),
       comments(*),
       approvals(*),
-      assets(*)
+      assets(id, type, url, name)
     `)
     .eq("id", id)
     .single()
