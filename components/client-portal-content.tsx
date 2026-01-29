@@ -746,6 +746,20 @@ export function ClientPortalContent({
               {/* Panel Content */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-6">
+                  {/* Post Image */}
+                  {(() => {
+                    const postImage = selectedPost.assets?.find((a: any) => a.type === "image")
+                    return postImage ? (
+                      <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                        <img 
+                          src={postImage.url} 
+                          alt={selectedPost.title} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : null
+                  })()}
+
                   {/* Title & Status */}
                   <div>
                     <h3 className="text-xl font-bold mb-2">{selectedPost.title}</h3>
