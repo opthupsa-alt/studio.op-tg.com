@@ -65,14 +65,15 @@ async function getShareData(clientId: string, year: number, month: number) {
     return { client, posts: [], plan: null, shareLink }
   }
 
-  // Get posts with platforms
+  // Get posts with platforms and assets
   const { data: posts } = await supabase
     .from("posts")
     .select(`
       *,
       post_platforms(
         platform:platforms(*)
-      )
+      ),
+      assets(*)
     `)
     .eq("plan_id", plan.id)
     .order("publish_date", { ascending: true })
@@ -80,6 +81,7 @@ async function getShareData(clientId: string, year: number, month: number) {
   const transformedPosts = (posts || []).map((post: any) => ({
     ...post,
     platforms: post.post_platforms?.map((pp: any) => pp.platform).filter(Boolean) || [],
+    assets: post.assets || [],
   }))
 
   return { client, posts: transformedPosts, plan, shareLink }

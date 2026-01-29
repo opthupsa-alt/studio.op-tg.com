@@ -85,7 +85,8 @@ export async function getPosts(options?: {
         *,
         platform:platforms(*)
       ),
-      comments(*)
+      comments(*),
+      assets(*)
     `)
   
   // Apply filters
@@ -113,7 +114,7 @@ export async function getPosts(options?: {
   return (data || []).map((post) => ({
     ...post,
     platforms: post.post_platforms?.map((pp: any) => pp.platform).filter(Boolean) || [],
-    assets: [],
+    assets: post.assets || [],
   }))
 }
 
@@ -172,7 +173,8 @@ export async function getPostById(id: string): Promise<Post | null> {
         platform:platforms(*)
       ),
       comments(*),
-      approvals(*)
+      approvals(*),
+      assets(*)
     `)
     .eq("id", id)
     .single()
@@ -185,6 +187,7 @@ export async function getPostById(id: string): Promise<Post | null> {
   return {
     ...data,
     platforms: data.post_platforms?.map((pp: any) => pp.platform).filter(Boolean) || [],
+    assets: data.assets || [],
   }
 }
 

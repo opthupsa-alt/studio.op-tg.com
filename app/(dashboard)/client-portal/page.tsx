@@ -52,6 +52,22 @@ async function getClientData() {
   // Get post IDs for related queries
   const postIds = (posts || []).map(p => p.id)
 
+  // Fetch assets separately
+  let assetsMap: Record<string, any[]> = {}
+  if (postIds.length > 0) {
+    const { data: assets } = await supabase
+      .from("assets")
+      .select("*")
+      .in("post_id", postIds)
+    
+    if (assets) {
+      assets.forEach(a => {
+        if (!assetsMap[a.post_id]) assetsMap[a.post_id] = []
+        assetsMap[a.post_id].push(a)
+      })
+    }
+  }
+
   // Fetch comments separately
   let commentsMap: Record<string, any[]> = {}
   if (postIds.length > 0) {
@@ -102,6 +118,7 @@ async function getClientData() {
     ...post,
     platforms: platformsMap[post.id] || [],
     comments: commentsMap[post.id] || [],
+    assets: assetsMap[post.id] || [],
   }))
 
   // Get platforms

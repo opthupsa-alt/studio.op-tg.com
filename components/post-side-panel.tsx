@@ -397,7 +397,7 @@ export function PostSidePanel({
                     disabled={isUploadingFile}
                     onChange={async (e) => {
                       const files = e.target.files
-                      if (!files) return
+                      if (!files || files.length === 0) return
                       
                       // If new post, save first then upload
                       if (isNew || !post?.id) {
@@ -411,7 +411,6 @@ export function PostSidePanel({
                         for (const file of Array.from(files)) {
                           const result = await uploadAsset(post.id, file)
                           if (result.error) {
-                            console.error("Error uploading file:", result.error)
                             alert(`خطأ في رفع ${file.name}: ${result.error}`)
                           }
                         }
@@ -419,6 +418,7 @@ export function PostSidePanel({
                         router.refresh()
                       } catch (error) {
                         console.error("Error uploading files:", error)
+                        alert(`خطأ غير متوقع: ${error}`)
                       } finally {
                         setIsUploadingFile(false)
                         e.target.value = ""
