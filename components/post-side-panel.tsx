@@ -127,6 +127,7 @@ export function PostSidePanel({
   const [isUploadingFile, setIsUploadingFile] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
+  const [localAssets, setLocalAssets] = useState<any[]>([])
   const publishDate = scheduledDate; // Declare publishDate variable
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export function PostSidePanel({
       setScheduledTime("")
       setSelectedPlatforms(post.platforms?.map((p) => p.id) || [])
       setVariants(post.variants || [])
+      setLocalAssets(post.assets || [])
       setNewComment("")
     } else if (isNew && isOpen) {
       // Reset ALL fields for new post
@@ -156,6 +158,7 @@ export function PostSidePanel({
       setScheduledTime("")
       setSelectedPlatforms([])
       setVariants([])
+      setLocalAssets([])
       setNewComment("")
       setActiveTab("content")
     }
@@ -421,9 +424,12 @@ export function PostSidePanel({
                           const result = await response.json()
                           if (!response.ok || result.error) {
                             alert(`خطأ في رفع ${file.name}: ${result.error || "Unknown error"}`)
+                          } else if (result.asset) {
+                            // Add new asset to local state immediately
+                            setLocalAssets(prev => [...prev, result.asset])
                           }
                         }
-                        // Refresh to show new files
+                        // Refresh to sync with server
                         router.refresh()
                       } catch (error) {
                         console.error("Error uploading files:", error)
@@ -462,11 +468,11 @@ export function PostSidePanel({
                   </label>
                   
                   {/* Display existing assets */}
-                  {post?.assets && post.assets.length > 0 && (
+                  {localAssets.length > 0 && (
                     <div className="mt-4 space-y-2">
                       <Label className="text-xs text-muted-foreground">الملفات المرفقة</Label>
                       <div className="grid grid-cols-3 gap-2">
-                        {post.assets.map((asset: any) => (
+                        {localAssets.map((asset: any) => (
                           <div key={asset.id} className="relative group">
                             {asset.type === "image" ? (
                               <img 
@@ -488,6 +494,8 @@ export function PostSidePanel({
                                 if (result.error) {
                                   alert(result.error)
                                 } else {
+                                  // Remove asset from local state immediately
+                                  setLocalAssets(prev => prev.filter(a => a.id !== asset.id))
                                   router.refresh()
                                 }
                               }}
