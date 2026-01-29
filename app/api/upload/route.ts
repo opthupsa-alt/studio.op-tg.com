@@ -96,8 +96,6 @@ export async function POST(request: NextRequest) {
         type: assetType,
         url: urlData.publicUrl,
         name: file.name,
-        size: file.size,
-        mime_type: mimeType,
       })
       .select()
       .single()
