@@ -409,9 +409,18 @@ export function PostSidePanel({
                       setIsUploadingFile(true)
                       try {
                         for (const file of Array.from(files)) {
-                          const result = await uploadAsset(post.id, file)
-                          if (result.error) {
-                            alert(`خطأ في رفع ${file.name}: ${result.error}`)
+                          const formData = new FormData()
+                          formData.append("file", file)
+                          formData.append("postId", post.id)
+                          
+                          const response = await fetch("/api/upload", {
+                            method: "POST",
+                            body: formData,
+                          })
+                          
+                          const result = await response.json()
+                          if (!response.ok || result.error) {
+                            alert(`خطأ في رفع ${file.name}: ${result.error || "Unknown error"}`)
                           }
                         }
                         // Refresh to show new files
