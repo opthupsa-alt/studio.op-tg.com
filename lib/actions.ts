@@ -1280,9 +1280,9 @@ export async function uploadAsset(
     return { error: "Clients cannot upload files" }
   }
 
-  // Generate unique filename
+  // Generate unique filename with client_id/post_id/filename format for RLS policies
   const fileExt = file.name.split(".").pop()
-  const fileName = `${postId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+  const fileName = `${post.client_id}/${postId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
   // Upload to storage
   const { data: uploadData, error: uploadError } = await supabase.storage
@@ -1363,10 +1363,10 @@ export async function deleteAsset(assetId: string) {
     return { error: "Insufficient permissions" }
   }
 
-  // Extract filename from URL
+  // Extract filename from URL - format: client_id/post_id/filename
   const url = new URL(asset.url)
   const pathParts = url.pathname.split("/")
-  const fileName = pathParts.slice(-2).join("/") // post_id/filename
+  const fileName = pathParts.slice(-3).join("/") // client_id/post_id/filename
 
   // Delete from storage
   const { error: storageError } = await supabase.storage
