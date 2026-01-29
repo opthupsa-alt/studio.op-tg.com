@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createPublicClient } from "@/lib/supabase/server"
 import type { Post, PostStatus } from "@/lib/types"
 
 function revalidateAll() {
@@ -1280,14 +1280,24 @@ export async function uploadAsset(
     return { error: "Clients cannot upload files" }
   }
 
-  // Generate unique filename with client_id/post_id/filename format for RLS policies
+  // Generate unique filename with client_id/post_id/filename format
   const fileExt = file.name.split(".").pop()
   const fileName = `${post.client_id}/${postId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-  // Upload to storage
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  // Use service role client for storage upload to bypass RLS
+  const storageClient = createPublicClient()
+  
+  // Convert File to ArrayBuffer for server-side upload
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  
+  // Upload to storage using service role
+  const { data: uploadData, error: uploadError } = await storageClient.storage
     .from("post-assets")
-    .upload(fileName, file)
+    .upload(fileName, buffer, {
+      contentType: file.type,
+      upsert: false
+    })
 
   if (uploadError) {
     console.error("Error uploading file:", uploadError)
@@ -1368,8 +1378,9 @@ export async function deleteAsset(assetId: string) {
   const pathParts = url.pathname.split("/")
   const fileName = pathParts.slice(-3).join("/") // client_id/post_id/filename
 
-  // Delete from storage
-  const { error: storageError } = await supabase.storage
+  // Delete from storage using service role client
+  const storageClient = createPublicClient()
+  const { error: storageError } = await storageClient.storage
     .from("post-assets")
     .remove([fileName])
 
