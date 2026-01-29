@@ -73,11 +73,11 @@ export async function getPosts(options?: {
     .from("posts")
     .select(`
       *,
-      client:clients(id, name, icon_url, logo_url, brand_primary_color),
+      client:clients(*),
       post_platforms(
-        platform:platforms(id, name, icon)
+        platform:platforms(*)
       ),
-      assets(id, type, url, name)
+      assets(*)
     `)
   
   // Apply filters
@@ -152,14 +152,14 @@ export async function getPostById(id: string): Promise<Post | null> {
     .from("posts")
     .select(`
       *,
-      client:clients(id, name, icon_url, logo_url, brand_primary_color),
+      client:clients(*),
       post_platforms(
-        platform:platforms(id, name, icon)
+        platform:platforms(*)
       ),
       variants:post_variants(*),
       comments(*),
       approvals(*),
-      assets(id, type, url, name)
+      assets(*)
     `)
     .eq("id", id)
     .single()
