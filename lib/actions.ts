@@ -1305,7 +1305,7 @@ export async function uploadAsset(
   }
 
   // Get public URL
-  const { data: urlData } = supabase.storage
+  const { data: urlData } = storageClient.storage
     .from("post-assets")
     .getPublicUrl(fileName)
 
@@ -1315,8 +1315,8 @@ export async function uploadAsset(
   if (mimeType.startsWith("image/")) assetType = "image"
   else if (mimeType.startsWith("video/")) assetType = "video"
 
-  // Create asset record
-  const { data: asset, error: assetError } = await supabase
+  // Create asset record using service role to bypass RLS
+  const { data: asset, error: assetError } = await storageClient
     .from("assets")
     .insert({
       post_id: postId,
@@ -1331,7 +1331,7 @@ export async function uploadAsset(
   if (assetError) {
     console.error("Error creating asset record:", assetError)
     // Try to delete uploaded file
-    await supabase.storage.from("post-assets").remove([fileName])
+    await storageClient.storage.from("post-assets").remove([fileName])
     return { error: assetError.message }
   }
 
@@ -1388,8 +1388,8 @@ export async function deleteAsset(assetId: string) {
     console.error("Error deleting file from storage:", storageError)
   }
 
-  // Delete asset record
-  const { error } = await supabase
+  // Delete asset record using service role to bypass RLS
+  const { error } = await storageClient
     .from("assets")
     .delete()
     .eq("id", assetId)
